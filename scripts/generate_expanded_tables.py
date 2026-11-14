@@ -120,7 +120,7 @@ with DEST.open('w') as f:
                                 weight=sum(math.exp(-((h-k)/.42)**2)*a for k,a in ((1,.25),(7+frame*3,1),(19+frame*4,.8),(37-frame*2,.5)))
                                 phase+=h*h*.17
                             elif core==5: # Metal: hard spectral shifts, phase-distorted clusters
-                                weight=sum(math.exp(-((h-k)/.7)**2)*a for k,a in ((2,.2),(8+frame*5,1),(27-frame*4,.9),(43-frame*3,.7)))
+                                weight=sum(math.exp(-((h-k)/1.2)**2)*a for k,a in ((2,.2),(8+frame*5,1),(27-frame*4,.9),(43-frame*3,.7)))
                                 phase+=h*h*(.23+.12*t)
                             elif core==6: # Organic: smoothly blooming high harmonics
                                 weight=(.7 if h==1 else .04/h)+(.12+.85*t)*math.exp(-((h-(4+14*t))/ (2+3*t))**2)
