@@ -47,14 +47,14 @@
     const dark=.5*(Math.sin(phase*6.28318530718)+Math.sin(phase*6.28318530718+.15));
     return Math.max(-1,Math.min(1,sh<0?base*(1+sh*.7)+dark*(-sh*.7):base*(1+sh*.35)));
   }
-  function displayedWave(phase,wave,pos,bank,table,shape){
-    const legacy=waveform(phase,wave,pos);
+  function displayedWave(phase,wave,pos,bank,table,shape,legacyShape=50){
+    const legacy=waveform(phase,wave,pos)+Math.sin(phase*6.28318530718)*((legacyShape-50)/50)*.32;
     return bank?expandedWave(phase,table,pos,shape):legacy;
   }
-  function trace(ctx, x, y, w, h, wave, pos, drift, bank, table, shape) {
+  function trace(ctx, x, y, w, h, wave, pos, drift, bank, table, shape, legacyShape) {
     let lastX=x,lastY=y+h/2;
     for(let i=0;i<w;i++){
-      const v=displayedWave((i/w + drift) % 1,wave,pos,bank,table,shape);
+      const v=displayedWave((i/w + drift) % 1,wave,pos,bank,table,shape,legacyShape);
       const py=y+Math.round(h/2-v*(h/2-2));
       if(i)ctx.line(lastX,lastY,x+i,py,1);
       lastX=x+i;lastY=py;
@@ -93,7 +93,7 @@
        * own header. Duplicating that feedback inside drawPage creates two
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
-      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape);
+      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape,legacyShape);
       /* Bank-aware legends are rendered by our canvas; the host's own
        * encoder labels remain static until Schwung adds layout refresh. */
       ctx.print(2,1,bank?"TABLE "+table+"  SPECTRAL "+Math.round(shape):"WAVE "+["SIN","SAW","SQR","TRI"][wave]+"  SHAPE "+Math.round(legacyShape),1);
