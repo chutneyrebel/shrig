@@ -147,7 +147,8 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('osc1_detune','osc2_detune','osc2_volume')), 'Native face missing audition controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==43
+assert len(meta['capabilities']['chain_params'])==46
+assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
