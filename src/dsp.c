@@ -277,6 +277,7 @@ static float sample_wave(Voice *v,float wave,float pos){
 static float warp_phase(float p,int mode,float amount){
     p=p-(float)(int)p;if(p<0.f)p+=1.f;
     float a=clampf(amount*.01f,0.f,1.f);
+    if(a<=0.f || mode==0)return p;
     if(mode==1){p=p*(1.f+3.f*a);p-=(float)(int)p;}
     else if(mode==2)p+=(p*p-p)*a*.95f;
     else if(mode==3)p+=(p-p*p)*a*.95f;
