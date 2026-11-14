@@ -35,3 +35,11 @@ New OSC 1 Envelope and OSC 2 Envelope child levels expose independent opt-in ADS
 The 8192-byte Schwung descriptor ceiling requires compact metadata. Unused legacy hierarchy levels and redundant presentation-only metadata were pruned; the functional existing root, OSC 1, OSC 2, FILTER, MOTION and AMP levels remain. Some older compatibility-only parameter labels fall back to their keys. New envelope/mix pages inherit their own encoder assignments and do not claim new root-level canvas pages.
 
 **Hardware test gates:** Confirm old presets sound unchanged, independent OSC 1/OSC 2 attack and release differ audibly, mix balance center is neutral, pan/level and polyphony remain stable, and saving/reloading new patches restores all new controls. Do not replace the known-good Phase 1 installation until CI succeeds and a backup exists.
+
+## Phase 3 filter candidate
+
+The historical LP12 mode remains filter_type=0, preserving the original filter math and preset default. New modes: HP12, BP12, Notch, Peak, Allpass, LP24 and HP24. All process the mixed OSC1/OSC2 stereo signal in the existing per-voice global filter stage; cutoff, resonance, filter envelope and LFO filter modulation remain available. LP24/HP24 cascade a second SVF stage and maintain independent stereo state per voice.
+
+FILTER has eight hardware knob assignments, including the new Filter Type selector. FILTER FACE draws a low-cost approximate response curve, **not** an FFT or calibrated frequency-response measurement. Existing state keys and their types/defaults/ranges are unchanged. The new key is appended and defaults to LP12.
+
+Hardware checks: verify original presets remain identical; audition each of eight filter modes; sweep cutoff/resonance, filter envelope and LFO depth; verify mode changes while notes sustain; check stereo pan, polyphony, save/reload, and five-minute performance stability. Keep main Phase 2 installation backed up until the candidate is validated.
