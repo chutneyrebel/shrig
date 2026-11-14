@@ -260,7 +260,21 @@
             "level"
           ],
           "params": [
-            "face",
+            {
+              "key": "face",
+              "name": "Synth Face",
+              "type": "canvas",
+              "canvas_script": "canvas.js",
+              "as_page": true,
+              "page_first": true,
+              "show_value": false,
+              "extra_keys": [
+                "voice_activity",
+                "cutoff",
+                "lfo_depth",
+                "filter_env_amt"
+              ]
+            },
             {
               "level": "osc",
               "label": "Oscillators"
