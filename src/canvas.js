@@ -18,10 +18,10 @@
     const shape = [sine, saw, sq, tri][Math.max(0, Math.min(3, wave | 0))];
     return shape * (1 - .19 * pos) + .19 * pos * Math.sin(phase * 18.84955592);
   }
-  function trace(ctx, x, y, w, h, wave, pos) {
+  function trace(ctx, x, y, w, h, wave, pos, drift) {
     let lastX=x,lastY=y+h/2;
     for(let i=0;i<w;i++){
-      const v=waveform(i/w,wave,pos);
+      const v=waveform((i/w + drift) % 1,wave,pos);
       const py=y+Math.round(h/2-v*(h/2-2));
       if(i)ctx.line(lastX,lastY,x+i,py,1);
       lastX=x+i;lastY=py;
@@ -38,11 +38,19 @@
       const motion=bounded(value(v,"lfo_depth",0),0,0,100);
       const env=bounded(value(v,"filter_env_amt",0),0,0,100);
       const mix=bounded(value(v,"osc2_level",0),0,0,100);
+      const rate=bounded(value(v,"lfo_rate",22),22,0,100);
+      const depth=motion/100;
+      const now=Number(o && o.nowMs);
+      const seconds=Number.isFinite(now)?now/1000:0;
+      /* Modulation-driven phase motion: no idle animation when depth is zero. */
+      const hz=.06+.12*rate;
+      const drift=depth*.12*Math.sin(seconds*hz*6.28318530718);
+      const animatedPos=Math.max(0,Math.min(1,pos+depth*.12*Math.sin(seconds*hz*6.28318530718)));
       /* Left: active waveform, driven by the actual displayed parameter values. */
       ctx.print(1,0,["SIN","SAW","SQR","TRI"][wave],1);
       const leftW=Math.floor(W*.58);
       ctx.fillRect(0,10,leftW,1,1);
-      trace(ctx,1,13,leftW-3,Math.max(7,H-18),wave,pos);
+      trace(ctx,1,13,leftW-3,Math.max(7,H-18),wave,animatedPos,drift);
       /* Right: compact synthesis signal path and depth meters. */
       const rightX=leftW+4,barX=rightX+20,barW=Math.max(3,W-barX-3);
       const rows=[["CUT",cut],["MOD",motion],["ENV",env],["OSC",mix]];
