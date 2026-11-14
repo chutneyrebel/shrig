@@ -84,3 +84,21 @@ assert.notEqual(unifiedLines(4),unifiedLines(40),'Spectral tables differ');
 assert.notEqual(unifiedLines(40,0),unifiedLines(40,50),'Dark Shape changes waveform');
 assert.notEqual(unifiedLines(40,50),unifiedLines(40,100),'Bright Shape changes waveform');
 console.log('PASS: unified 52-table canvas and universal Shape');
+
+const faces=sandbox.globalThis.sprig_faces;
+assert.deepEqual(Object.keys(faces).sort(),['filter','main','osc1','osc2']);
+for(const name of Object.keys(faces)){
+  const lines=[];
+  const labels=[];
+  faces[name]({...ctx,line(...args){lines.push(args);},print(x,y,t){labels.push(t);}},{
+    nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50,lfo_depth:60,voice_activity:1}
+  });
+  assert(lines.length>30, name+' face has no trace');
+  assert.equal(labels.length,4,name+' face needs four meters');
+}
+const faceLines=(name)=>{const lines=[];faces[name]({...ctx,line(...args){lines.push(args);}},{
+  nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50}
+});return JSON.stringify(lines);};
+assert.notEqual(faceLines('osc1'),faceLines('osc2'),'oscillator faces must be distinct');
+assert.notEqual(faceLines('filter'),faceLines('osc1'),'filter must show response rather than oscillator wave');
+console.log('PASS: four separate canvas face renderers produce distinct graphics');
