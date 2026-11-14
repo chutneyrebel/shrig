@@ -12,7 +12,7 @@ Sprig WT aims to make wavetable exploration immediate: one collection of 52 orig
 
 - Freestanding C11 audio engine for 44.1 kHz stereo output, eight voices and band-limited wavetable playback.
 - Unified wavetable selection **0–51** with four interpolated frames per table.
-- Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; independent stereo pan is not yet implemented.
+- Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; stereo pan is now implemented in the development DSP and awaits Move hardware verification.
 - Eight initial phase-warp modes: **Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror, Quantize**. These are independently authored transformations, not exact reproductions of Shrub's algorithms.
 - ADSR amplitude envelope, filter envelope, LFO motion, drive and resonant low-pass filtering.
 - A single native Synth Face canvas exists. It currently approximates the selected waveform rather than reading the exact DSP output, so visuals may differ from sound.
@@ -55,7 +55,7 @@ See [hardware test instructions](docs/HARDWARE_TEST.md) before changing anything
 
 Do not overwrite a known-good installation with an experimental build unless you can restore it. Schwung v1.9 compatibility, canvas navigation, encoder refresh, stereo pan and filter variants require on-device verification.
 
-## Development priorities
+## Recent changes on main\n\n### Audio-engine parity pass (14 November 2026)\n\n- Added independent left/right per-voice filter states so OSC 1 and OSC 2 pan can produce stereo output while retaining the shared master-filter settings.\n- Routed wavetable-position LFO modulation to OSC 2 as well as OSC 1.\n- Made warp amount 0 neutral for all modes and increased the audible range of Quantize. Other warp algorithms still need hardware verification.\n- Added desktop regression tests for pan extremes, centered stereo and OSC 2 modulation.\n- **Not yet hardware-verified:** The latest GitHub Actions run must pass before installing; warp parity, parameter naming, and four graphical pages remain outstanding.\n\n## Development priorities
 
 1. **Phase 1:** Dual wavetable oscillator DSP, independently controlled warp, audio tests and stereo pan.
 2. **Phase 2:** Four native Synth Face pages and graph rendering that matches oscillator and filter mathematics; confirm Schwung's page-navigation contract.
