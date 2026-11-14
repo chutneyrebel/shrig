@@ -106,7 +106,7 @@ assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Sc
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_warp_type']
-assert len(meta['capabilities']['chain_params'])==40
+assert len(meta['capabilities']['chain_params'])==42
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -289,3 +289,14 @@ setp('osc1_warp_type',0);setp('osc1_warp',0);setp('osc1_volume',100)
 setp('osc2_wavetable',24);setp('osc2_position',60);setp('osc2_warp_type',3);setp('osc2_warp',65);setp('osc2_volume',50)
 assert getp('osc2_wavetable')=='24' and getp('osc2_warp_type')=='3'
 print('PASS: independent dual oscillator controls and warp ranges')
+# Both octave selectors preserve the default pitch at index 2.
+for key in ('osc1_octave','osc2_octave'):
+    param=next(p for p in chain_params if p['key']==key)
+    assert param['options']==['-2','-1','0','+1','+2'] and param['default']==2
+    setp(key,4);assert getp(key)=='4'
+    setp(key,0);assert getp(key)=='0'
+    setp(key,2);assert getp(key)=='2'
+assert 'osc1_octave' in hierarchy['levels']['osc1']['knobs']
+assert 'osc2_octave' in hierarchy['levels']['osc2']['knobs']
+print('PASS: independent octave controls and neutral default')
+
