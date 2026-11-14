@@ -51,7 +51,58 @@ with DEST.open('w') as f:
                         elif family==21: weight=(.02 if h%(4+variant)==frame%(4+variant) else 1)/h**(.7+.1*frame)
                         elif family==22: weight=(.1+.9*abs(math.sin(h*(1.9+.2*variant)+frame*.6)))/h**(.2+.15*frame)
                         else: weight=(1 if h in (1,7+frame*3,16+variant*4,35-frame*4) else .001)/h**(.2+.1*variant)
-                        v+=weight*math.sin(h*p+.13*frame*h+.07*variant*h)
+                        # Retain every established ID 0-51 byte-for-byte.
+                        # New IDs 52-99 use 12 distinct spectral architectures.
+                        # Alternate families sweep smoothly or switch between
+                        # sharply contrasting harmonic structures across frames.
+                        phase=.13*frame*h+.07*variant*h
+                        if wave>=48:
+                            group=(wave-48)//4
+                            t=frame/3
+                            shift=variant*.37
+                            smooth=(group%2==0)
+                            u=t if smooth else (0.06 if frame<2 else .94)
+                            def bell(center,width):
+                                return math.exp(-((h-center)/width)**2)
+                            if group==0: # breath / breathy harmonic haze
+                                weight=(.06+.94*bell(2+u*15+shift,2+u*4))/h**.4
+                                phase+=.4*math.sin(h*.31+u*3)
+                            elif group==1: # glass / discrete bell partials
+                                peaks=(1,4+variant,11+frame*5,29-frame*3)
+                                weight=sum(bell(q,.45) for q in peaks)/h**.12
+                                phase+=h*h*.17
+                            elif group==2: # reed / migrating formant pairs
+                                weight=(.025+bell(4+u*9+shift,1.5)+.8*bell(18-u*9,2.8))/h**.3
+                                phase+=.2*math.sin(h*.5)
+                            elif group==3: # hollow / fundamental to upper clusters
+                                weight=(1-u)*bell(h,1.3)+u*(bell(7+variant,1.1)+bell(23-frame*2,1.7))
+                                phase+=h*.43*frame
+                            elif group==4: # pulse train / narrow comb teeth
+                                weight=(.015+.985*(.5+.5*math.cos(h*(1.1+u*1.4+shift)))**12)/h**.4
+                                phase+=h*.19
+                            elif group==5: # metal / dissonant high clusters
+                                weight=(.02+bell(5+variant,1)+bell(17+frame*5,1.3)+bell(39-frame*3,1.8))/h**.08
+                                phase+=h*h*(.06+u*.11)
+                            elif group==6: # subharmonic-style low partial bloom
+                                weight=(.02+bell(1+u*7,1.1)+.6*bell(3+u*13,2))/h**.65
+                                phase+=.7*math.sin(h*.17+u*5)
+                            elif group==7: # fractured / odd-even inversion
+                                weight=((1-u) if h%2 else u)/h**(.3+.7*u)
+                                phase+=math.pi*(h%3==0)*u
+                            elif group==8: # vocal / two resonant vowel peaks
+                                weight=(.015+bell(3+variant+u*6,1.2)+.7*bell(12+variant*2-u*5,2))/h**.25
+                                phase+=.12*h*u
+                            elif group==9: # noise-like / deterministic harmonic scatter
+                                seed=abs(math.sin(h*78.233+variant*12.989+frame*37.719))
+                                weight=(.01+seed**(1+frame*2))/h**(.15+.15*u)
+                                phase+=h*h*.21+variant
+                            elif group==10: # minimal / sparse, shifting partials
+                                weight=(bell(1, .7)+(.1+.7*u)*bell(2+variant+u*5,.8)+.3*bell(9+variant*3,1))/h**.3
+                                phase+=.12*frame*h
+                            else: # alien / spectral rotation and phase scrambling
+                                weight=(.02+abs(math.sin(h*h*(.03+.015*variant)+u*4))**6)/h**.28
+                                phase+=h*h*(.1+.21*u)
+                        v+=weight*math.sin(h*p+phase)
                     values.append(v)
                 # Preserve the 48 established expanded waves bit-for-bit.
                 # For new waves, remove numerical DC and apply conservative
