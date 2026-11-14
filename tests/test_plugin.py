@@ -68,6 +68,8 @@ assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
+assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wt_bank','wt_table'], 'Expanded oscillator controls must be visible on root Move knobs'
+assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wave','wt_bank','wt_table']
 assert len(meta['capabilities']['chain_params'])==22
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
@@ -78,6 +80,7 @@ assert face['canvas_script']=='canvas.js'
 assert 'voice_activity' in face['extra_keys']
 assert getp('voice_activity')=='0'
 hierarchy=json.loads(getp('ui_hierarchy'))
+assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP hierarchy differs from shipped metadata'
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
 assert any(isinstance(p,dict) and p.get('level')=='filter_env' for p in hierarchy['levels']['root']['params'])
