@@ -94,9 +94,6 @@
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
       trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape,legacyShape);
-      /* Bank-aware legends are rendered by our canvas; the host's own
-       * encoder labels remain static until Schwung adds layout refresh. */
-      ctx.print(2,1,bank?"TABLE "+table+"  SPECTRAL "+Math.round(shape):"WAVE "+["SIN","SAW","SQR","TRI"][wave]+"  SHAPE "+Math.round(legacyShape),1);
       /* A sparse second harmonic contour gives the technical trace an organic
        * shimmer. It exists only while voices sound and Motion is substantial.
        * The base waveform remains unchanged and idle stays perfectly still. */
