@@ -20,7 +20,7 @@
   }
   /* Visual approximation of the generated spectral families, not an audio readback.
    * Cap at 24 harmonics to keep the Move canvas render lightweight. */
-  function expandedWave(phase, table, pos) {
+  function expandedWave(phase, table, pos, shape=50) {
     const family=Math.floor(table/4),variant=table%4;
     const frame=pos*3;
     const tilt=.85+.33*variant+.22*frame;
@@ -34,20 +34,27 @@
       else if(family===4)weight=(.2+.8*Math.abs(Math.sin(h*(.55+.12*variant)+frame*.2)))/Math.pow(h,tilt);
       else if(family===5)weight=(Math.abs(h-(3+variant*2+frame*2))<=1?1:.005)/Math.pow(h,.35+.1*frame);
       else if(family===6)weight=([1,2+variant,5+Math.round(frame),9+variant*2].includes(h)?1:.005)/Math.pow(h,.4+.1*frame);
-      else weight=(.02+.98*Math.abs(Math.cos(h*(1.2+.13*variant)+frame*.3)))/Math.pow(h,.55+.15*frame);
+      else if(family===7)weight=(.02+.98*Math.abs(Math.cos(h*(1.2+.13*variant)+frame*.3)))/Math.pow(h,.55+.15*frame);
+      else if(family===8)weight=([1,3+variant,8+Math.round(frame)*3,17+variant*4].includes(h)?1:.002)/Math.pow(h,.3);
+      else if(family===9)weight=(h%2===0?1:.01)*Math.abs(Math.sin(h*(.3+.1*variant)+frame*.5))/Math.pow(h,.5+.1*frame);
+      else if(family===10)weight=(h%(5+variant)===1?1:.005)/Math.pow(h,.3+.2*frame);
+      else weight=([1,6+variant*2,13+Math.round(frame)*3,23+variant*3].includes(h)?1:.003)/Math.pow(h,.3+.15*frame);
       sum+=weight*Math.sin(h*phase*6.28318530718+.13*frame*h+.07*variant*h);
       norm+=weight;
     }
-    return Math.max(-1,Math.min(1,sum/Math.max(.6,norm*.55)));
+    const base=sum/Math.max(.6,norm*.55);
+    const sh=(shape-50)/50;
+    const dark=.5*(Math.sin(phase*6.28318530718)+Math.sin(phase*6.28318530718+.15));
+    return Math.max(-1,Math.min(1,sh<0?base*(1+sh*.7)+dark*(-sh*.7):base*(1+sh*.35)));
   }
-  function displayedWave(phase,wave,pos,bank,table){
+  function displayedWave(phase,wave,pos,bank,table,shape){
     const legacy=waveform(phase,wave,pos);
-    return bank?expandedWave(phase,table,pos):legacy;
+    return bank?expandedWave(phase,table,pos,shape):legacy;
   }
-  function trace(ctx, x, y, w, h, wave, pos, drift, bank, table) {
+  function trace(ctx, x, y, w, h, wave, pos, drift, bank, table, shape) {
     let lastX=x,lastY=y+h/2;
     for(let i=0;i<w;i++){
-      const v=displayedWave((i/w + drift) % 1,wave,pos,bank,table);
+      const v=displayedWave((i/w + drift) % 1,wave,pos,bank,table,shape);
       const py=y+Math.round(h/2-v*(h/2-2));
       if(i)ctx.line(lastX,lastY,x+i,py,1);
       lastX=x+i;lastY=py;
@@ -61,7 +68,8 @@
       if(W<32||H<18)return;
       const wave=bounded(value(v,"wave",1),1,0,3)|0;
       const bank=bounded(value(v,"wt_bank",0),0,0,1)|0;
-      const table=bounded(value(v,"wt_table",0),0,0,31)|0;
+      const table=bounded(value(v,"wt_table",0),0,0,47)|0;
+      const shape=bounded(value(v,"spectral_shape",50),50,0,100);
       const pos=bounded(value(v,"position",50),50,0,100)/100;
       const cut=bounded(value(v,"cutoff",78),78,0,100);
       const motion=bounded(value(v,"lfo_depth",0),0,0,100);
@@ -84,7 +92,7 @@
        * own header. Duplicating that feedback inside drawPage creates two
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
-      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table);
+      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape);
       /* A sparse second harmonic contour gives the technical trace an organic
        * shimmer. It exists only while voices sound and Motion is substantial.
        * The base waveform remains unchanged and idle stays perfectly still. */
@@ -94,7 +102,7 @@
         const ghostPos=Math.max(0,Math.min(1,animatedPos+shimmer));
         for(let i=0;i<width;i+=4){
           const phase=(i/width+drift*.6+shimmer*.15)%1;
-          const v0=displayedWave(phase<0?phase+1:phase,wave,ghostPos,bank,table);
+          const v0=displayedWave(phase<0?phase+1:phase,wave,ghostPos,bank,table,shape);
           const py=y0+Math.round(height/2-v0*(height/2-2)*.78);
           ctx.fillRect(x0+i,py,1,1,1);
         }
