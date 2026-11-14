@@ -56,6 +56,13 @@ def render(n=1):
 
 def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 
+# Stage 3A architecture guard: legacy tables and preset IDs stay untouched.
+header=(ROOT/'src/wavetable_engine.h').read_text()
+assert '#define SPRIG_LEGACY_BANK 0' in header
+assert '#define SPRIG_LEGACY_WAVES 4' in header
+assert '#define SPRIG_LEGACY_FRAMES 4' in header
+assert '#define SPRIG_LEGACY_BANDS 9' in header
+assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
