@@ -131,7 +131,7 @@
     'osc1_pan','osc1_volume','osc2_wavetable','osc2_position',
     'osc2_warp_type','osc2_warp','osc2_detune','osc2_pan','osc2_volume',
     'shape','lfo_rate','lfo_depth','lfo_wt_depth','cutoff','resonance',
-    'drive','filter_env_amt','lfo_filter','master_pan','voice_activity'
+    'drive','filter_env_amt','lfo_filter','master_pan','filter_type','voice_activity'
   ];
   function faceValues(o){
     const initial=(o&&o.values)||{};
@@ -201,16 +201,20 @@
     const seconds=(o&&Number.isFinite(o.nowMs))?o.nowMs/1000:frame/30;
     const active=bounded(value(v,'voice_activity',0),0,0,8)>0;
     if(which==='filter'){
-      /* Global LP filter preview. Later filter modes are not yet executable. */
+      /* Eight DSP filter response families; illustrative, not a measured FFT. */
       const cutoff=bounded(value(v,'cutoff',78),78,0,100);
       const res=bounded(value(v,'resonance',15),15,0,100);
+      const mode=bounded(value(v,'filter_type',0),0,0,7);
       const y0=2,h=Math.max(8,H-16);
       let previous=0;
       for(let x=0;x<W-2;x++){
         const t=x/(W-2),center=.1+.8*cutoff/100;
-        const slope=1/(1+Math.pow(Math.max(.001,t)/Math.max(.001,center),4));
-        const peak=(res/100)*.4*Math.exp(-Math.pow((t-center)/.09,2));
-        const y=y0+Math.round(h*(1-Math.min(1,slope+peak)));
+        const ratio=Math.max(.001,t)/Math.max(.001,center);
+        const lp=1/(1+Math.pow(ratio,4)),hp=1-lp;
+        const band=Math.exp(-Math.pow(Math.log(ratio)/.36,2));
+        const peak=(res/100)*.35*band;
+        const response=[lp,hp,band,1-band,Math.min(1,.5+band*.5),1,lp*lp,hp*hp][mode];
+        const y=y0+Math.round(h*(1-Math.max(0,Math.min(1,response+peak*(mode===0||mode===6?1:0)))));
         if(x)ctx.line(x,y0+previous,x+1,y,1);
         previous=y-y0;
       }

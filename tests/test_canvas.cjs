@@ -168,7 +168,7 @@ const snapshotOrder=[
   'osc1_pan','osc1_volume','osc2_wavetable','osc2_position','osc2_warp_type',
   'osc2_warp','osc2_detune','osc2_pan','osc2_volume','shape','lfo_rate',
   'lfo_depth','lfo_wt_depth','cutoff','resonance','drive','filter_env_amt',
-  'lfo_filter','master_pan','voice_activity'
+  'lfo_filter','master_pan','filter_type','voice_activity'
 ];
 function snapshot(extra={}){
   const state={wavetable:1,position:50,osc1_warp_type:0,osc1_warp:0,
@@ -176,7 +176,7 @@ function snapshot(extra={}){
     osc2_position:50,osc2_warp_type:0,osc2_warp:0,osc2_detune:50,
     osc2_pan:50,osc2_volume:0,shape:50,lfo_rate:22,lfo_depth:0,
     lfo_wt_depth:0,cutoff:78,resonance:15,drive:0,filter_env_amt:0,
-    lfo_filter:0,master_pan:50,voice_activity:0,...extra};
+    lfo_filter:0,master_pan:50,filter_type:0,voice_activity:0,...extra};
   return snapshotOrder.map(k=>state[k]).join(',');
 }
 function nativeLines(face,extra={},nowMs=1000){
@@ -208,3 +208,7 @@ assert.notEqual(nativeLines('osc1',{lfo_depth:90,voice_activity:1},1000),
 assert.notEqual(nativeLines('filter',{cutoff:15}),nativeLines('filter',{cutoff:85}),
   'filter graphic must track cutoff');
 console.log('PASS: OSC1, OSC2, MAIN and FILTER native face snapshots, warp and motion');
+
+assert.notEqual(nativeLines('filter',{filter_type:0}),nativeLines('filter',{filter_type:1}),'Filter FACE must change with mode');
+assert.notEqual(nativeLines('filter',{filter_type:2}),nativeLines('filter',{filter_type:3}),'Bandpass and notch curves must differ');
+console.log('PASS: Phase 3 FILTER FACE changes response by filter type');
