@@ -327,7 +327,7 @@ render(200)
 assert getp('voice_activity')=='0'
 # Phase 1: one read-only snapshot provides twenty-five live face values.
 face_data=getp('face_snapshot').split(',')
-assert len(face_data)==25 and all(item.isdigit() for item in face_data)
+assert len(face_data)==26 and all(item.isdigit() for item in face_data)
 assert int(face_data[0])==int(getp('wavetable'))
 assert int(face_data[7])==int(getp('osc2_wavetable'))
 assert not any(token.startswith('face_snapshot=') for token in getp('state').split(','))
