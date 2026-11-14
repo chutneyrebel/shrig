@@ -39,4 +39,10 @@ function waveformLines(depth, nowMs) {
 assert.equal(waveformLines(0,1000),waveformLines(0,1700));
 assert.notEqual(waveformLines(80,1000),waveformLines(80,1700));
 console.log('PASS: idle waveform stable; modulation produces time-dependent motion');
+// Missing clock must not freeze a canvas on hosts without nowMs.
+const withoutClockA=waveformLines(80,undefined);
+let withoutClockB=withoutClockA;
+for(let i=0;i<20;i++) withoutClockB=waveformLines(80,undefined);
+assert.notEqual(withoutClockA,withoutClockB);
+console.log('PASS: missing nowMs uses redraw-frame fallback');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
