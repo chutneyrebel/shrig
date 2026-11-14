@@ -82,3 +82,12 @@ function bankLines(bank,table){
 assert.notEqual(bankLines(0,0),bankLines(1,0),'Expanded bank must change the canvas');
 assert.notEqual(bankLines(1,0),bankLines(1,24),'Expanded table must change the canvas');
 console.log('PASS: Synth Face displays bank-aware and table-aware waveforms');
+
+function shapeLines(shape){
+ const lines=[];
+ overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wt_bank:1,wt_table:40,spectral_shape:shape,position:50,voice_activity:0}});
+ return JSON.stringify(lines);
+}
+assert.notEqual(shapeLines(0),shapeLines(50),'Dark spectral shape must affect Synth Face');
+assert.notEqual(shapeLines(50),shapeLines(100),'Bright spectral shape must affect Synth Face');
+console.log('PASS: Spectral Shape is visible in expanded Synth Face');
