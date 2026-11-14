@@ -115,3 +115,16 @@ assert.equal(new Set(coreTraces).size,8,'all eight core tables must have distinc
 assert.notEqual(coreTrace(99),coreTrace(100),'ID 99 and core ID 100 must differ');
 assert.notEqual(coreTrace(100,'osc1'),coreTrace(107,'osc1'));
 console.log('PASS: native Move canvas renders all eight curated core wavetable IDs');
+
+// Dedicated WT LFO must animate native waveforms independently of Motion Depth.
+function wtLfoTrace(depth,nowMs,voices=1){
+  const lines=[];
+  overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {
+    nowMs,values:{wavetable:106,position:50,lfo_depth:0,lfo_wt_depth:depth,lfo_rate:15,voice_activity:voices}
+  });
+  return JSON.stringify(lines);
+}
+assert.equal(wtLfoTrace(0,1000),wtLfoTrace(0,1700));
+assert.equal(wtLfoTrace(100,1000,0),wtLfoTrace(100,1700,0));
+assert.notEqual(wtLfoTrace(100,1000),wtLfoTrace(100,1700));
+console.log('PASS: dedicated WT LFO animates physical waveform only while sounding');
