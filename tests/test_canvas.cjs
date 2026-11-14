@@ -102,3 +102,16 @@ const faceLines=(name)=>{const lines=[];faces[name]({...ctx,line(...args){lines.
 assert.notEqual(faceLines('osc1'),faceLines('osc2'),'oscillator faces must be distinct');
 assert.notEqual(faceLines('filter'),faceLines('osc1'),'filter must show response rather than oscillator wave');
 console.log('PASS: four separate canvas face renderers produce distinct graphics');
+
+// Regression: all curated core IDs must draw distinct physical Move traces.
+function coreTrace(id, face='main') {
+  const lines=[];
+  const draw=face==='main'?overlay.drawPage:sandbox.globalThis.sprig_faces[face];
+  draw({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wavetable:id,osc2_wavetable:id,position:48,osc2_position:48,lfo_depth:0,voice_activity:0}});
+  return JSON.stringify(lines);
+}
+const coreTraces=Array.from({length:8},(_,i)=>coreTrace(100+i));
+assert.equal(new Set(coreTraces).size,8,'all eight core tables must have distinct native traces');
+assert.notEqual(coreTrace(99),coreTrace(100),'ID 99 and core ID 100 must differ');
+assert.notEqual(coreTrace(100,'osc1'),coreTrace(107,'osc1'));
+console.log('PASS: native Move canvas renders all eight curated core wavetable IDs');
