@@ -1,0 +1,86 @@
+// Host-side contract smoke test for Schwung's module-owned graphical page.
+'use strict';
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const code = fs.readFileSync('src/canvas.js', 'utf8');
+const sandbox = {globalThis: {}};
+vm.runInNewContext(code, sandbox, {timeout: 1000});
+const overlay = sandbox.globalThis.canvas_overlay;
+assert.equal(typeof overlay.drawPage, 'function');
+let count = 0;
+const ctx = {
+  width: 128, height: 42,
+  print(x,y,text,color) {
+    assert(Number.isFinite(x) && Number.isFinite(y));
+    assert(typeof text==='string');
+    count++;
+  },
+  fillRect(x,y,w,h,color) {
+    assert([x,y,w,h].every(Number.isFinite));
+    assert(w>=0 && h>=0 && x>=0 && y>=0);
+    count++;
+  },
+  line(x1,y1,x2,y2,color) {
+    assert([x1,y1,x2,y2].every(Number.isFinite));
+    count++;
+  }
+};
+overlay.drawPage(ctx, {values:{wave:2,position:68,cutoff:30,lfo_depth:45,filter_env_amt:70,osc2_level:50}});
+assert(count>25);
+overlay.drawPage(ctx, {values:{}});
+overlay.drawPage({ ...ctx, width: 25, height: 12 }, { values:{} });
+// Modulation must visibly change the trace over time, while zero depth stays still.
+function waveformLines(depth, nowMs, voices=0) {
+  const lines=[];
+  overlay.drawPage({...ctx, line(...args){lines.push(args);}}, {nowMs, values:{wave:1,position:50,cutoff:40,lfo_depth:depth,lfo_rate:25,voice_activity:voices}});
+  return JSON.stringify(lines);
+}
+assert.equal(waveformLines(0,1000),waveformLines(0,1700));
+assert.equal(waveformLines(80,1000,0),waveformLines(80,1700,0));
+assert.notEqual(waveformLines(80,1000,1),waveformLines(80,1700,1));
+console.log('PASS: idle waveform stable even at depth 80; sounding voices enable motion');
+// Missing clock must not freeze a canvas on hosts without nowMs.
+const withoutClockA=waveformLines(80,undefined,1);
+let withoutClockB=withoutClockA;
+for(let i=0;i<20;i++) withoutClockB=waveformLines(80,undefined,1);
+assert.notEqual(withoutClockA,withoutClockB);
+console.log('PASS: missing nowMs uses redraw-frame fallback');
+// Schwung owns the parameter header. The canvas must never duplicate it.
+const keys=['wave','position','osc2_level','detune','cutoff','resonance','lfo_depth','level'];
+const vals={wave:2,position:63,osc2_level:41,detune:72,cutoff:30,resonance:25,lfo_depth:80,level:66};
+for(let i=0;i<keys.length;i++){
+  const printed=[];
+  overlay.drawPage({...ctx,print(x,y,t,c){printed.push(t);}}, {keys,touched:i,values:vals,nowMs:1000});
+  assert.deepEqual(printed,['C','M','E','O'],'canvas must not repeat host parameter header');
+}
+// Stage 2C: harmonic shimmer is absent while idle and at zero motion,
+// but appears as sparse pixels when a voice sounds with sufficient motion.
+function shimmerPixels(voices,depth,nowMs=1200){
+  const pixels=[];
+  overlay.drawPage({...ctx,fillRect(x,y,w,h,color){
+    if(w===1 && h===1) pixels.push([x,y]);
+  }},{nowMs,values:{wave:1,position:55,lfo_depth:depth,lfo_rate:30,voice_activity:voices}});
+  return pixels;
+}
+assert.equal(shimmerPixels(0,80).length,0);
+assert.equal(shimmerPixels(1,0).length,0);
+assert.equal(shimmerPixels(1,14).length,0);
+assert(shimmerPixels(1,80).length>15);
+assert.notEqual(JSON.stringify(shimmerPixels(1,80,1000)),JSON.stringify(shimmerPixels(1,80,1800)));
+console.log('PASS: sparse harmonic shimmer is note-gated and modulation-reactive');
+console.log('PASS: no duplicate encoder feedback inside canvas');
+console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
+
+
+
+function unifiedLines(table,shape=50){
+ const lines=[];
+ overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wavetable:table,shape,position:50,voice_activity:0}});
+ return JSON.stringify(lines);
+}
+assert.notEqual(unifiedLines(0),unifiedLines(4),'Classic and spectral waveforms differ');
+assert.notEqual(unifiedLines(4),unifiedLines(40),'Spectral tables differ');
+assert.notEqual(unifiedLines(40,0),unifiedLines(40,50),'Dark Shape changes waveform');
+assert.notEqual(unifiedLines(40,50),unifiedLines(40,100),'Bright Shape changes waveform');
+console.log('PASS: unified 52-table canvas and universal Shape');
