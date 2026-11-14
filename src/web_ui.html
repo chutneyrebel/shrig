@@ -29,8 +29,8 @@ footer{color:var(--dim);font-size:11px;padding-top:13px;line-height:1.5}
 'use strict';
 const groups={
  osc:[['wave','Wave',0,3,1],['position','Wavetable Position',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1]],
- tone:[['cutoff','Cutoff',0,100,1],['resonance','Resonance',0,100,1],['drive','Drive',0,100,1],['level','Output',0,100,1]],
- motion:[['lfo_rate','Motion Rate',0,100,1],['lfo_depth','Motion Depth',0,100,1]],
+ tone:[['cutoff','Cutoff',0,100,1],['resonance','Resonance',0,100,1],['drive','Drive',0,100,1],['filter_env_amt','Filter EG Amount',0,100,1],['filter_env_attack','Filter EG Attack',0,2000,1],['filter_env_decay','Filter EG Decay',0,2000,1],['level','Output',0,100,1]],
+ motion:[['lfo_rate','Motion Rate',0,100,1],['lfo_depth','Motion Depth',0,100,1],['lfo_filter','Motion Filter',0,100,1]],
  amp:[['attack','Attack',0,2000,1],['decay','Decay',0,2000,1],['sustain','Sustain',0,100,1],['release','Release',0,2000,1]]
 };
 const waveNames=['Sine','Saw','Square','Triangle'];const fields={};
