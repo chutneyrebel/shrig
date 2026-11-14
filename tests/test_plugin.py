@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Sprig WT metadata exceeds 8 KB'
 BUILD = ROOT / 'build'
 BUILD.mkdir(exist_ok=True)
 if not (ROOT/'src/expanded_tables.h').is_file():
