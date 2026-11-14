@@ -1,4 +1,4 @@
-# Sprig WT v0.1.0 (experimental)
+# Sprig WT v0.2.0 development (experimental)
 
 A small, independently implemented, Shrub-inspired wavetable synthesizer module for [Schwung](https://schwung.dev/) on Ableton Move. This is not a port of Shrub and includes **no Shrub/Xfer firmware or proprietary wavetable assets**.
 
@@ -6,14 +6,14 @@ A small, independently implemented, Shrub-inspired wavetable synthesizer module 
 
 ## Synth
 
-- 8-voice polyphony and velocity; round-robin oldest voice stealing
+- 8-voice polyphony, second saw oscillator, detune, LFO wavetable movement, nonlinear drive, and velocity; round-robin oldest voice stealing
 - 4 originally generated wavetable families (sine, saw, square/pulse, triangle), each with 4 morphable timbre frames
 - Per-note band-limited tables, linear table interpolation, smooth morphing
 - 2-pole zero-delay-feedback state-variable low-pass filter with resonance
 - Attack, decay, sustain, release; bounded audio; no runtime heap allocations, locking, I/O, or subprocesses
 - `state` parameter for round-trip patch storage; version 0.1 has integer controls
 
-Move's eight knob assignments: **Wave**, **WT Position**, **Cutoff**, **Resonance**, **Attack**, **Decay**, **Sustain**, **Release**. Output level is on the **Output** subpage.
+Move's eight performance knobs: **Wave**, **WT Position**, **Osc 2 Mix**, **Detune**, **Cutoff**, **Resonance**, **Motion Depth**, **Output**. Navigate to Oscillators, Filter + Color, Motion, Amp Envelope and Output for more controls. A custom web synth panel is included for Schwung Manager's Remote UI. The dedicated on-device graphical synthesizer face is not yet implemented.
 
 ## Build (Mac/Linux)
 
@@ -45,3 +45,10 @@ Use a **new dedicated repository** such as `chutneyrebel/sprig-wt`, with develop
 Original DSP and generated wavetable definitions in this prototype are independently authored for this experiment. License for this prototype: MIT, see LICENSE. The public Schwung plugin ABI and metadata conventions are interface references, not copied DSP algorithms. The proprietary Shrub firmware is intentionally omitted.
 
 No connection to or endorsement by Ableton, Xfer Records, or the Shrub authors.
+
+## v0.2.0 development status
+
+- Source changes committed to `feature/shrub-inspired-synth`; **not released**.
+- Additive synth controls and a remote browser interface; no proprietary Shrub assets.
+- Existing installed v0.1.0 remains unchanged until a verified v0.2.0 release is published.
+- GitHub Actions and new Move hardware compatibility require confirmation before installation.
