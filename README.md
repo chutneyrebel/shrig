@@ -6,16 +6,16 @@
 
 ## Vision
 
-Sprig WT aims to make wavetable exploration immediate: one collection of 52 original waveforms (four classic and 48 spectral), independent oscillators, hands-on warp transformations, motion, and clear visual feedback. No separate Legacy/Expanded bank selection is needed in the intended interface.
+Sprig WT aims to make wavetable exploration immediate: one collection of 108 original waveforms (four classic and 48 spectral), independent oscillators, hands-on warp transformations, motion, and clear visual feedback. No separate Legacy/Expanded bank selection is needed in the intended interface.
 
 ## Implemented in the development source
 
 - Freestanding C11 audio engine for 44.1 kHz stereo output, eight voices and band-limited wavetable playback.
-- Unified wavetable selection **0–51** with four interpolated frames per table.
+- Unified wavetable selection **0–107** with four interpolated frames per table.
 - Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; stereo pan is now implemented in the development DSP and awaits Move hardware verification.
 - Eight initial phase-warp modes: **Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror, Quantize**. These are independently authored transformations, not exact reproductions of Shrub's algorithms.
 - ADSR amplitude envelope, filter envelope, LFO motion, drive and resonant low-pass filtering.
-- A single native Synth Face canvas exists. It currently approximates the selected waveform rather than reading the exact DSP output, so visuals may differ from sound.
+- Four native Synth Face canvas page entries are now declared in source (MAIN, OSC 1, OSC 2 and FILTER). It currently approximates the selected waveform rather than reading the exact DSP output, so visuals may differ from sound.
 - Some older compatibility parameters remain in the metadata. They are not intended to appear in the final simplified performance interface.
 
 ## Target four-page layout
@@ -29,7 +29,7 @@ Sprig WT aims to make wavetable exploration immediate: one collection of 52 orig
 
 **Filter routing decision:** one **master filter** applied to the combined oscillators, not separate filters per oscillator. Planned modes include LP, HP, BP and comb, subject to DSP and CPU testing. The current DSP only implements a resonant low-pass filter.
 
-The on-screen **C / M / E / O** indicators should show relevant modulation on each page. Their final definitions and Schwung page compatibility are still being tested. Four independent native canvas pages are **not yet implemented or verified**.
+The on-screen **C / M / E / O** indicators should show relevant modulation on each page. Their final definitions and Schwung page compatibility are still being tested. Four native canvas pages are registered in the DSP and module hierarchy and pass source-level CI checks; their navigation and rendering on the physical Move remain **unverified**.
 
 ## Build and test
 
@@ -74,14 +74,14 @@ MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton,
 The host audio suite now checks Off plus all seven active warp modes separately on OSC 1 and OSC 2. For each active mode it compares a fresh-instance reference against zero amount (must be sample-identical) and strong warp (must audibly alter the PCM signal). This is automated audio verification, not yet confirmation of on-device control feel or perceived musical quality.
 
 
-### Four-face native UI development (not yet hardware-ready)
+### Four-face native UI development (CI-verified; not yet hardware-tested)
 
-`src/canvas.js` now contains distinct MAIN, OSC 1, OSC 2 and FILTER drawing functions, with host-side tests for unique traces and meters. The current Schwung metadata still registers only one native canvas page. The four renderers are **not yet four hardware jog-wheel pages**: separate `as_page` declarations and host-compatible overlay selection remain to be wired and tested before the consolidated v0.2.1 hardware test. The FILTER graphic is an illustrative low-pass response, not a measured DSP frequency response; the audio filter remains low-pass only.
+`src/canvas.js` now contains distinct MAIN, OSC 1, OSC 2 and FILTER drawing functions, with host-side tests for unique traces and meters. The Schwung chain metadata and root hierarchy now register all four `as_page` canvas entries with named overlays. CI checks their registration and drawing entry points; actual hardware jog-wheel navigation still needs testing. The FILTER graphic is an illustrative low-pass response, not a measured DSP frequency response; the audio filter remains low-pass only.
 
 
 ### Wavetable expansion in development (v0.2.1)
 
-The unified oscillator selector now targets **100 waveforms per oscillator**: IDs 0–3 retain the original classic tables, IDs 4–51 retain the existing 48 generated spectral tables, and IDs 52–99 add 48 new spectral tables in 12 families (formant peaks, dual peaks, spectral notches, sparse clusters, nonlinear ripples, periodic partial selection, resonant combs and moving clusters). Every expanded table has four morph frames and nine pitch-dependent band-limited versions, generated before compilation with no runtime sample loading. Existing IDs remain stable. This is still a **procedurally generated wavetable library**, not user WAV import, and the native four-page registration is still pending. Test the expanded library, warp engine and four-page hardware navigation together only after the full v0.2.1 release is marked ready.
+The unified oscillator selector now targets **100 waveforms per oscillator**: IDs 0–3 retain the original classic tables, IDs 4–51 retain the existing 48 generated spectral tables, and IDs 52–99 add 48 new spectral tables in 12 families (formant peaks, dual peaks, spectral notches, sparse clusters, nonlinear ripples, periodic partial selection, resonant combs and moving clusters). Every expanded table has four morph frames and nine pitch-dependent band-limited versions, generated before compilation with no runtime sample loading. Existing IDs remain stable. This is still a **procedurally generated wavetable library**, not user WAV import, and the native four-page registration is implemented in source and CI-verified, but not yet hardware-tested. Test the expanded library, warp engine and four-page hardware navigation together only after the full v0.2.1 release is marked ready.
 
 
 ### Wavetable quality guard (v0.2.1)
@@ -91,12 +91,12 @@ New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, 
 
 ### Categorized wavetable library
 
-`src/wavetable_catalog.json` maps the 96 expanded waveforms into Organic & Evolving (28), Industrial & Metallic (36), and Vocal & Spectral (32), with the four classic waveforms separate. The catalog is bundled with the module and checked for complete non-overlapping ID coverage in host tests. These are **discovery categories only**: there is not yet a native Move category picker, and this change does not add new waveforms or alter preset IDs. Native four-page Synth Face registration remains incomplete; hold hardware testing until the combined release is ready.
+`src/wavetable_catalog.json` maps the 96 expanded waveforms into Organic & Evolving (28), Industrial & Metallic (36), and Vocal & Spectral (32), with the four classic waveforms separate. The catalog is bundled with the module and checked for complete non-overlapping ID coverage in host tests. These are **discovery categories only**: there is not yet a native Move category picker, and this change does not add new waveforms or alter preset IDs. Native four-page registration is complete in source; physical navigation is not yet validated. Hold installation until the consolidated hardware-test release is explicitly approved.
 
 
 ### Categorized wavetable browsing (v0.2.1)
 
-The Schwung remote HTML interface now provides **independent category pickers for OSC 1 and OSC 2**, alongside each oscillator's continuous wavetable ID slider. Categories are **Classic (0–3)**, **Original Spectral (4–51)**, **Organic / Atmospheric (52–67)**, **Industrial / Metallic (68–83)** and **Vocal / Formant (84–99)**. Choosing a category selects its first waveform; the slider then explores individual waveforms. The category picker follows parameter changes. IDs remain stable for presets. These are sound-design groupings of generated spectral recipes, not imported recordings. Physical Move category browsing and four native canvas page registration remain to be implemented and verified; do not mistake remote HTML grouping for native hardware navigation.
+The Schwung remote HTML interface now provides **independent category pickers for OSC 1 and OSC 2**, alongside each oscillator's continuous wavetable ID slider. Categories are **Classic (0–3)**, **Original Spectral (4–51)**, **Organic / Atmospheric (52–67)**, **Industrial / Metallic (68–83)** and **Vocal / Formant (84–99)**. Choosing a category selects its first waveform; the slider then explores individual waveforms. The category picker follows parameter changes. IDs remain stable for presets. These are sound-design groupings of generated spectral recipes, not imported recordings. Physical Move category browsing remains unimplemented and four native canvas pages remain hardware-unverified; do not mistake remote HTML grouping for native hardware navigation.
 
 
 ### Oscillator pitch and detune display (development)
