@@ -75,7 +75,7 @@
         else if(core===4){a=.08*bell(1,.42)+bell(7+f*3,.42)+.8*bell(19+f*4,.42)+.5*bell(37-f*2,.42);shift=h*h*.17;}
         else if(core===5){a=.65*bell(2,1.2)+bell(8+f*5,1.2)+.9*bell(27-f*4,1.2)+.7*bell(43-f*3,1.2);shift=h*h*(.23+.12*t);}
         else if(core===6){a=(h===1?.9-.65*t:.025/h)+(.08+1.35*t)*bell(3+18*t,1.3+3.2*t);shift=.3*Math.sin(h*.3+t*3);}
-        else {a=f===0?(h===1?.9:0):f===1?(h%7===1?1:.005)/Math.pow(h,.25):f===2?([3,11,23,41].includes(h)?1:.002)/Math.pow(h,.12):(h%2===0?1:.001)/Math.pow(h,.1);shift=h*h*(.13+.15*t);}
+        else {a=f===0?(h===1?.28:h===5?.9:h===11?.6:0):f===1?(h%7===1?1:.005)/Math.pow(h,.25):f===2?([3,11,23,41].includes(h)?1:.002)/Math.pow(h,.12):(h%2===0?1:.001)/Math.pow(h,.1);shift=h*h*(.13+.15*t);}
         v+=a*Math.sin(h*p+shift+.13*f*h);
       }
       return v;
