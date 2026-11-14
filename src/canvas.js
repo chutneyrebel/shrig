@@ -164,7 +164,7 @@
       const v=o && o.values || {};
       const W=ctx.width||128,H=ctx.height||40;
       if(W<32||H<18)return;
-      const selected=bounded(value(v,"wavetable",1),1,0,99)|0;
+      const selected=bounded(value(v,"wavetable",1),1,0,107)|0;
       const wave=Math.min(3,selected);
       const bank=selected>=4?1:0;
       const table=Math.max(0,selected-4);
