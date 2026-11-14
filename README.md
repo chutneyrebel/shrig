@@ -87,3 +87,8 @@ The unified oscillator selector now targets **100 waveforms per oscillator**: ID
 ### Wavetable quality guard (v0.2.1)
 
 New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, while original IDs 0–51 retain their established generation. The host test scans all 48 × 4 × 9 newly generated waveform rows for 256 samples, near-zero mean and conservative headroom. This does not yet implement 16/32-frame wavetables, phase-aligned spectral interpolation, or user WAV imports. Those need explicit memory/CPU and compatibility evaluation before changing the real-time DSP.
+
+
+### Categorized wavetable library
+
+`src/wavetable_catalog.json` maps the 96 expanded waveforms into Organic & Evolving (28), Industrial & Metallic (36), and Vocal & Spectral (32), with the four classic waveforms separate. The catalog is bundled with the module and checked for complete non-overlapping ID coverage in host tests. These are **discovery categories only**: there is not yet a native Move category picker, and this change does not add new waveforms or alter preset IDs. Native four-page Synth Face registration remains incomplete; hold hardware testing until the combined release is ready.
