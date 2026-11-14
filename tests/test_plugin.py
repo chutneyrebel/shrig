@@ -505,3 +505,33 @@ assert api.get(p2,b'state',state,len(state))>0
 assert b'osc1_attack=800' in state.value and b'mix_balance=25' in state.value
 api.destroy(p2)
 print('PASS: Phase 2 opt-in envelope/mix metadata, defaults, bounds and state roundtrip')
+
+def phase2_audio(osc,attack=1,balance=None):
+    p=api.create(b'.',None)
+    assert p
+    def put(k,v):api.set(p,k.encode(),str(v).encode())
+    put('cutoff',100);put('resonance',0);put('attack',1)
+    put('osc1_volume',100 if osc==1 else 0)
+    put('osc2_volume',100 if osc==2 else 0)
+    put('osc2_level',0)
+    put('osc%d_env_enabled'%osc,1)
+    put('osc%d_attack'%osc,attack)
+    if balance is not None:
+        put('mix_enabled',1);put('mix_balance',balance)
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(p,note,3,0)
+    buf=(C.c_int16*256)()
+    audio=[]
+    for _ in range(12):
+        api.render(p,buf,128)
+        audio.extend(buf[::2])
+    api.destroy(p)
+    return audio
+for o in (1,2):
+    quick=phase2_audio(o,1)
+    slow=phase2_audio(o,2000)
+    assert rms(quick)>rms(slow)*4,(o,rms(quick),rms(slow))
+    full=phase2_audio(o,1,0 if o==1 else 100)
+    muted=phase2_audio(o,1,100 if o==1 else 0)
+    assert rms(full)>rms(muted)*4,(o,'mix balance must isolate oscillators')
+print('PASS: Phase 2 per-oscillator attack and opt-in mix balance change actual PCM')
