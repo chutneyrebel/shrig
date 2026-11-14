@@ -105,6 +105,7 @@ assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Schwung 8 KB metadata limit'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
+assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('osc1_detune','osc2_detune','osc2_volume')), 'Native face missing audition controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_octave']
 assert len(meta['capabilities']['chain_params'])==42
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
@@ -118,6 +119,7 @@ remote_ui=(ROOT/'src/web_ui.html').read_text()
 assert "const warpNames=['Off','Sync','Bend+','Bend−','PWM','Asym','Mirror','Quant']" in remote_ui
 assert "['osc1_warp_type','OSC 1 Warp Type'" in remote_ui
 assert "['osc2_warp_type','OSC 2 Warp Type'" in remote_ui
+assert "['osc2_volume','OSC 2 Volume',0,100,1]" in remote_ui, 'Remote OSC 2 volume slider missing'
 print('PASS: native and remote UI expose eight named warp modes')
 face=next((p for p in chain_params if p.get('key')=='face'), None)
 assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
