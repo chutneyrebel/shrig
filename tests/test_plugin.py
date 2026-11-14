@@ -68,9 +68,9 @@ assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wt_bank','wt_table'], 'Expanded oscillator controls must be visible on root Move knobs'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wave','wt_bank','wt_table']
-assert len(meta['capabilities']['chain_params'])==23
+assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wt_bank','bank_select'], 'Expanded oscillator controls must be visible on root Move knobs'
+assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wt_bank','bank_select','position']
+assert len(meta['capabilities']['chain_params'])==26
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -125,7 +125,7 @@ setp('wave','Square');assert getp('wave')=='2'
 # Stage 3A.3: the fourth knob is bank-sensitive when the host refreshes hierarchy.
 setp('wt_bank',1)
 expanded_hierarchy=json.loads(getp('ui_hierarchy'))
-assert expanded_hierarchy['levels']['root']['knobs'][3]=='spectral_shape'
+assert expanded_hierarchy['levels']['root']['knobs'][3]=='bank_shape'
 assert 'spectral_shape' in expanded_hierarchy['levels']['osc']['params']
 setp('spectral_shape',0)
 assert getp('spectral_shape')=='0'
@@ -133,7 +133,7 @@ setp('spectral_shape',100)
 assert getp('spectral_shape')=='100'
 setp('spectral_shape',50)
 setp('wt_bank',0)
-assert json.loads(getp('ui_hierarchy'))['levels']['root']['knobs'][3]=='wave'
+assert json.loads(getp('ui_hierarchy'))['levels']['root']['knobs'][3]=='bank_shape'
 assert getp('wave') in ('0','1','2','3')
 # Expanded bank is opt-in: old state without new keys must stay in Legacy.
 setp('wt_bank',1);setp('wt_table',47)
@@ -178,3 +178,15 @@ api.destroy(inst)
 print('PASS: ABI, v1.9 chain_params/canvas contract, render, MIDI, polyphony, wavetable position, enum, state, clamp, limit')
 print('Mono audio RMS:',round(rms(played),1))
 print('Polyphony audio RMS:',round(rms(poly),1))
+
+# Cached host mapping: the same proxy keys must resolve to bank-specific targets.
+setp('wt_bank',0);setp('bank_select',3);setp('bank_shape',20)
+assert getp('wave')=='3' and getp('legacy_shape')=='20'
+assert getp('bank_select')=='3' and getp('bank_shape')=='20'
+setp('wt_bank',1);setp('bank_select',47);setp('bank_shape',85)
+assert getp('wt_table')=='47' and getp('spectral_shape')=='85'
+assert getp('wave')=='3' and getp('legacy_shape')=='20'
+assert getp('bank_select')=='47' and getp('bank_shape')=='85'
+setp('wt_bank',0)
+assert getp('bank_select')=='3' and getp('bank_shape')=='20'
+print('PASS: cached physical knob proxies preserve independent bank controls')
