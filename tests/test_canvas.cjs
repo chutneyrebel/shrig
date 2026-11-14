@@ -73,21 +73,14 @@ console.log('PASS: no duplicate encoder feedback inside canvas');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
 
 
-// Expanded bank and table must visibly change the native waveform, including idle.
-function bankLines(bank,table){
- const lines=[];
- overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wave:1,wt_bank:bank,wt_table:table,position:50,voice_activity:0}});
- return JSON.stringify(lines);
-}
-assert.notEqual(bankLines(0,0),bankLines(1,0),'Expanded bank must change the canvas');
-assert.notEqual(bankLines(1,0),bankLines(1,24),'Expanded table must change the canvas');
-console.log('PASS: Synth Face displays bank-aware and table-aware waveforms');
 
-function shapeLines(shape){
+function unifiedLines(table,shape=50){
  const lines=[];
- overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wt_bank:1,wt_table:40,spectral_shape:shape,position:50,voice_activity:0}});
+ overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wavetable:table,shape,position:50,voice_activity:0}});
  return JSON.stringify(lines);
 }
-assert.notEqual(shapeLines(0),shapeLines(50),'Dark spectral shape must affect Synth Face');
-assert.notEqual(shapeLines(50),shapeLines(100),'Bright spectral shape must affect Synth Face');
-console.log('PASS: Spectral Shape is visible in expanded Synth Face');
+assert.notEqual(unifiedLines(0),unifiedLines(4),'Classic and spectral waveforms differ');
+assert.notEqual(unifiedLines(4),unifiedLines(40),'Spectral tables differ');
+assert.notEqual(unifiedLines(40,0),unifiedLines(40,50),'Dark Shape changes waveform');
+assert.notEqual(unifiedLines(40,50),unifiedLines(40,100),'Bright Shape changes waveform');
+console.log('PASS: unified 52-table canvas and universal Shape');
