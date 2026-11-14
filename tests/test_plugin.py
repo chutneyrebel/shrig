@@ -76,7 +76,7 @@ print('PASS: organic, industrial and vocal catalog covers all 96 expanded wavefo
 import re
 table_text=(ROOT/'src/expanded_tables.h').read_text()
 rows=re.findall(r'\{([^{}]+)\}',table_text)
-assert len(rows)==96*4*9, ('unexpected expanded table dimensions',len(rows))
+assert len(rows)==104*4*9, ('unexpected expanded table dimensions',len(rows))
 for wave in range(48,96):
     for frame in range(4):
         for band in range(9):
@@ -86,13 +86,37 @@ for wave in range(48,96):
             assert abs(sum(samples)/256)<0.0001,(wave,frame,band,'DC bias')
             assert max(abs(x) for x in samples)<=0.871,(wave,frame,band,'headroom')
 print('PASS: all new wavetable frames are DC-centered with safe headroom')
+# Spectral checks compare the actual generated band-limited waveform frames.
+# Core IDs 100-107 are appended; every historical ID 0-99 remains unchanged.
+def table_row(wave,frame,band=0):
+    row=rows[((wave-4)*4+frame)*9+band]
+    return [float(x.rstrip('f')) for x in row.split(',') if x.strip()]
+def spectral_features(samples):
+    # Compare normalized harmonic magnitude profiles, ignoring phase shifts.
+    mags=[]
+    for h in range(1,49):
+        re=sum(v*math.cos(2*math.pi*h*i/256) for i,v in enumerate(samples))
+        im=sum(v*math.sin(2*math.pi*h*i/256) for i,v in enumerate(samples))
+        mags.append(math.hypot(re,im))
+    total=sum(mags) or 1
+    return [v/total for v in mags]
+def spectral_distance(a,b):
+    return sum(abs(x-y) for x,y in zip(a,b))
+cores={i:[spectral_features(table_row(i,f)) for f in range(4)] for i in range(100,108)}
+for i,frames in cores.items():
+    assert spectral_distance(frames[0],frames[3])>.18,(i,'insufficient position evolution')
+for i in cores:
+    for j in cores:
+        if i>=j:continue
+        assert max(spectral_distance(cores[i][f],cores[j][f]) for f in (0,3))>.22,(i,j,'core timbres too similar')
+print('PASS: eight core tables exhibit position evolution and pairwise spectral distinction')
 # Remote curated discovery keeps the full numeric ID range for preset recall.
 remote=(ROOT/'src/web_ui.html').read_text()
 assert 'const curatedWaves=[' in remote and 'curatedIds' in remote
-for label in ('Sine / Pure','Glass Partials','Reed Formant','Metallic Cluster','Alien Spectral'):
+for label in ('Pure · Fundamental','Glass · Bell','Vocal · Formant','Metal · Cluster','Alien · Fracture'):
     assert label in remote, ('missing curated sound',label)
-assert "['wavetable','OSC 1 Wavetable',0,99,1]" in remote
-assert "['osc2_wavetable','OSC 2 Wavetable',0,99,1]" in remote
+assert "['wavetable','OSC 1 Wavetable',0,107,1]" in remote
+assert "['osc2_wavetable','OSC 2 Wavetable',0,107,1]" in remote
 assert 'Other / Existing Preset' in remote
 print('PASS: curated discovery and legacy preset IDs coexist')
 # Stage 3A architecture guard: legacy tables and preset IDs stay untouched.
@@ -174,8 +198,8 @@ setp('wave','Square');assert getp('wave')=='2'
 # Unified selection exposes all 100 waveforms without a bank switch.
 assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_octave']
 setp('wavetable',0);assert getp('wavetable')=='0'
-setp('wavetable',99);assert getp('wavetable')=='99'
-setp('wavetable',999);assert getp('wavetable')=='99'
+setp('wavetable',107);assert getp('wavetable')=='107'
+setp('wavetable',999);assert getp('wavetable')=='107'
 setp('wavetable',4);setp('shape',0)
 dark=sample_with(1,50)
 setp('shape',100)
@@ -286,7 +310,7 @@ print('Polyphony audio RMS:',round(rms(poly),1))
 
 
 # Independent oscillator controls are exposed and bounded.
-for k,hi in [('osc1_warp_type',7),('osc2_warp_type',7),('osc2_wavetable',99),('osc1_pan',100),('osc2_pan',100),('osc1_volume',100),('osc2_volume',100)]:
+for k,hi in [('osc1_warp_type',7),('osc2_warp_type',7),('osc2_wavetable',107),('osc1_pan',100),('osc2_pan',100),('osc1_volume',100),('osc2_volume',100)]:
     setp(k,999)
     assert getp(k)==str(hi),(k,getp(k))
 setp('osc1_warp_type',0);setp('osc1_warp',0);setp('osc1_volume',100)
