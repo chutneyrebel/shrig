@@ -113,7 +113,9 @@ with DEST.open('w') as f:
                                 weight=(1/h**(1.15-.65*t))*(1 if frame==0 else (1 if h%2 else .05) if frame==1 else (1 if h%3==1 else .03) if frame==2 else 1)
                             elif core==2: # Hollow: odd -> fifth-heavy -> high airy
                                 weight=(1 if h%2 else .0)/h**(.9-.45*t)
-                                if frame>=2:weight*=.05 if h<5 else 1
+                                # Hollow: strong fundamental cavity opens into upper odd partials.
+                                if frame<=1 and h>=7:weight*=.12
+                                if frame>=2 and h<7:weight*=.015
                             elif core==3: # Vocal: two formants move in opposing directions
                                 weight=.03/h+.95*math.exp(-((h-(3+10*t))/1.6)**2)+.8*math.exp(-((h-(19-10*t))/2.4)**2)
                             elif core==4: # Glass: isolated, bell-like harmonic clusters
