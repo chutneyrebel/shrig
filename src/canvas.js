@@ -52,31 +52,10 @@
       const hz=.06+.12*rate;
       const drift=depth*.12*Math.sin(seconds*hz*6.28318530718);
       const animatedPos=Math.max(0,Math.min(1,pos+depth*.12*Math.sin(seconds*hz*6.28318530718)));
-      /* Schwung v1.9 passes the active encoder slot as touched and its
-       * eight knob keys in o.keys. Preserve the large wave while exposing
-       * the currently adjusted parameter directly in the body band. */
-      const keys=o && Array.isArray(o.keys)?o.keys:[];
-      const touched=o && Number.isInteger(o.touched)?o.touched:-1;
-      const active=touched>=0&&touched<keys.length?keys[touched]:null;
-      const names={
-        wave:"WT TYPE",position:"WT POS",osc2_level:"OSC2 MIX",
-        detune:"DETUNE",cutoff:"CUTOFF",resonance:"RESO",
-        lfo_depth:"MOTION",level:"LEVEL"
-      };
-      const label=active&&names[active]||"SPRIG WT";
-      const raw=active?value(v,active,0):0;
-      const display=active==="wave"?["SINE","SAW","SQUARE","TRIANGLE"][Math.max(0,Math.min(3,raw|0))]
-        :active?String(Math.round(bounded(raw,0,0,100))):"";
-      /* Header is always present. No dropdown or modal is drawn by Sprig. */
-      ctx.print(1,0,label,1);
-      if(display){
-        const dx=Math.max(55,W-(display.length*6)-2);
-        ctx.print(dx,0,display,1);
-      }else{
-        ctx.print(Math.max(70,W-31),0,["SIN","SAW","SQR","TRI"][wave],1);
-      }
-      const waveY=10, waveH=Math.max(7,H-23);
-      ctx.fillRect(0,waveY-1,W,1,1);
+      /* The host already draws the active encoder's label and value in its
+       * own header. Duplicating that feedback inside drawPage creates two
+       * overlapping rows on the actual Move display. Keep this page visual. */
+      const waveY=1, waveH=Math.max(7,H-14);
       trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift);
       /* Tiny persistent signal meters keep the synth readable when idle. */
       const meters=[["C",cut],["M",motion],["E",env],["O",mix]];
