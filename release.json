@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0",
+  "download_url": "https://github.com/chutneyrebel/shrig/releases/download/v.0.1.0/sprig-wt-module.tar.gz",
+  "name": "Sprig WT",
+  "description": "Experimental lightweight wavetable sound generator for Schwung on Ableton Move; hardware testing pending.",
+  "repo_url": "https://github.com/chutneyrebel/shrig"
+}
