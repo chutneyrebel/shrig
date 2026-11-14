@@ -23,18 +23,18 @@
   function expandedWave(phase, table, pos) {
     const family=Math.floor(table/4),variant=table%4;
     const frame=pos*3;
-    const tilt=1.15+.23*variant+.15*frame;
+    const tilt=.85+.33*variant+.22*frame;
     let sum=0,norm=0;
     for(let h=1;h<=24;h++){
       let weight=0;
       if(family===0)weight=1/Math.pow(h,tilt);
-      else if(family===1)weight=(h%2?.98:.07)/Math.pow(h,tilt);
-      else if(family===2)weight=(h%3===1?1:.08)/Math.pow(h,tilt);
-      else if(family===3)weight=(h%4===1?1:.04)/Math.pow(h,tilt);
+      else if(family===1)weight=(h%2?1:.01)/Math.pow(h,tilt);
+      else if(family===2)weight=(h%3===1?1:.01)/Math.pow(h,tilt);
+      else if(family===3)weight=(h%4===1?1:.01)/Math.pow(h,tilt);
       else if(family===4)weight=(.2+.8*Math.abs(Math.sin(h*(.55+.12*variant)+frame*.2)))/Math.pow(h,tilt);
-      else if(family===5)weight=(Math.abs(h-(3+variant*2+frame*2))<=2?1:.06)/Math.pow(h,.7+.12*frame);
-      else if(family===6)weight=([1,2+variant,5+Math.round(frame),9+variant*2].includes(h)?1:.02)/Math.pow(h,.6+.1*frame);
-      else weight=(.1+.9*Math.abs(Math.cos(h*(1.2+.13*variant)+frame*.3)))/Math.pow(h,tilt);
+      else if(family===5)weight=(Math.abs(h-(3+variant*2+frame*2))<=1?1:.005)/Math.pow(h,.35+.1*frame);
+      else if(family===6)weight=([1,2+variant,5+Math.round(frame),9+variant*2].includes(h)?1:.005)/Math.pow(h,.4+.1*frame);
+      else weight=(.02+.98*Math.abs(Math.cos(h*(1.2+.13*variant)+frame*.3)))/Math.pow(h,.55+.15*frame);
       sum+=weight*Math.sin(h*phase*6.28318530718+.13*frame*h+.07*variant*h);
       norm+=weight;
     }
