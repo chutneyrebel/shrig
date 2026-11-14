@@ -37,18 +37,22 @@ const octaveNames=['−2','−1','0','+1','+2'];
 const warpNames=['Off','Sync','Bend+','Bend−','PWM','Asym','Mirror','Quant'];
 const waveNames=['Sine','Saw','Square','Triangle'];const bankNames=['Legacy','Expanded'];const fields={};
 // Stable ID ranges: older presets keep their original numeric IDs.
-const wtCategories=[
- ['Classic',0,3],['Original Spectral',4,51],
- ['Organic / Atmospheric',52,67],['Industrial / Metallic',68,83],
- ['Vocal / Formant',84,99]
+// Curated discovery only. Numeric IDs remain unchanged for existing presets.
+const curatedWaves=[
+ ['Sine / Pure',0],['Saw / Bright',1],['Square / Hollow',2],['Triangle / Soft',3],
+ ['Harmonic Bloom',4],['Odd Harmonics',8],['Spectral Ripple',20],
+ ['Sparse Formant',28],['Spectral Comb',32],['Harmonic Gaps',44],
+ ['Breathing Texture',52],['Glass Partials',56],['Reed Formant',60],
+ ['Metallic Cluster',72],['Vowel Resonance',84],['Alien Spectral',96]
 ];
-function wtCategory(id){return wtCategories.find(c=>id>=c[1]&&id<=c[2])||wtCategories[0]}
+const curatedIds=new Set(curatedWaves.map(w=>w[1]));
 function categoryPicker(key){
  const wrapper=document.createElement('div');wrapper.className='field';
- const label=document.createElement('label');label.textContent=key==='wavetable'?'OSC 1 Category':'OSC 2 Category';
+ const label=document.createElement('label');label.textContent=key==='wavetable'?'OSC 1 Curated Sounds':'OSC 2 Curated Sounds';
  const picker=document.createElement('select');picker.setAttribute('aria-label',label.textContent);
- for(const [name,lo,hi] of wtCategories){const opt=document.createElement('option');opt.value=String(lo);opt.textContent=name+' ('+lo+'–'+hi+')';picker.append(opt)}
- picker.addEventListener('change',()=>{const id=Number(picker.value);setParam(key,id);update(key,id)});
+ for(const [name,id] of curatedWaves){const opt=document.createElement('option');opt.value=String(id);opt.textContent=name+' · '+id;picker.append(opt)}
+ const other=document.createElement('option');other.value='legacy';other.textContent='Other / Existing Preset';picker.append(other);
+ picker.addEventListener('change',()=>{if(picker.value==='legacy')return;const id=Number(picker.value);setParam(key,id);update(key,id)});
  wrapper.append(label,picker);return {wrapper,picker};
 }
 const categoryPickers={};
@@ -65,7 +69,7 @@ function control(key,name,min,max,step){
  if(key==='wave'||key==='wt_bank'||warpType||octaveType)(octaveType?octaveNames:warpType?warpNames:key==='wave'?waveNames:bankNames).forEach((w,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=w;input.append(opt)});
  else{input.type='range';input.min=min;input.max=max;input.step=step;}
  input.setAttribute('aria-label',name);
- const change=()=>{val.textContent=octaveType?octaveNames[+input.value]:warpType?warpNames[+input.value]:key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(Number(input.value))[1]);if(['wavetable','position','shape'].includes(key))drawWave()};
+ const change=()=>{val.textContent=octaveType?octaveNames[+input.value]:warpType?warpNames[+input.value]:key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=(curatedIds.has(Number(input.value))?String(input.value):'legacy');if(['wavetable','position','shape'].includes(key))drawWave()};
  input.addEventListener('input',change);input.addEventListener('change',change);
  root.append(input);fields[key]={input,val};return root;
 }
@@ -75,7 +79,7 @@ for(const key of ['wavetable','osc2_wavetable']){
  document.getElementById('osc').insertBefore(item.wrapper,fields[key].input.parentElement);
 }
 ;
-function update(key,v){const f=fields[key];if(!f)return;const n=Number(v);if(!Number.isFinite(n))return;f.input.value=String(n);f.val.textContent=(key==='osc1_octave'||key==='osc2_octave')?(octaveNames[n]||String(n)):(key==='osc1_warp_type'||key==='osc2_warp_type')?(warpNames[n]||String(n)):key==='wave'?waveNames[n]||String(n):key==='wt_bank'?bankNames[n]||String(n):String(n);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(n)[1]);if(['wave','position','wt_bank','wt_table','spectral_shape'].includes(key))drawWave()}
+function update(key,v){const f=fields[key];if(!f)return;const n=Number(v);if(!Number.isFinite(n))return;f.input.value=String(n);f.val.textContent=(key==='osc1_octave'||key==='osc2_octave')?(octaveNames[n]||String(n)):(key==='osc1_warp_type'||key==='osc2_warp_type')?(warpNames[n]||String(n)):key==='wave'?waveNames[n]||String(n):key==='wt_bank'?bankNames[n]||String(n):String(n);if(categoryPickers[key])categoryPickers[key].value=(curatedIds.has(n)?String(n):'legacy');if(['wave','position','wt_bank','wt_table','spectral_shape'].includes(key))drawWave()}
 function drawWave(){
  const canvas=document.getElementById('scope'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);ctx.strokeStyle='#2b3844';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
