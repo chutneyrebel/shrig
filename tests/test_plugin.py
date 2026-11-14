@@ -41,8 +41,8 @@ def midi(status,note,velocity,src=0):
 
 def setp(k,v):api.set(inst,k.encode(),str(v).encode())
 def getp(k):
-    buf=C.create_string_buffer(2048)
-    r=api.get(inst,k.encode(),buf,2048)
+    buf=C.create_string_buffer(8192)
+    r=api.get(inst,k.encode(),buf,8192)
     assert r>=0,(k,r)
     return buf.value.decode()
 def render(n=1):
@@ -60,6 +60,10 @@ meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert len(meta['capabilities']['chain_params'])==19
+hierarchy=json.loads(getp('ui_hierarchy'))
+assert 'levels' in hierarchy and 'root' in hierarchy['levels']
+assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
+assert any(isinstance(p,dict) and p.get('level')=='filter_env' for p in hierarchy['levels']['root']['params'])
 assert getp('module_id')=='sprig-wt'
 assert getp('attack')=='10'
 assert getp('osc2_level')=='0' and getp('lfo_depth')=='0'
