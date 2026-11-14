@@ -63,7 +63,7 @@ def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 # Inspect generated float rows, not just the recipe's intent.
 import re
 table_text=(ROOT/'src/expanded_tables.h').read_text()
-rows=re.findall(r'\\{([^{}]+)\\}',table_text)
+rows=re.findall(r'\{([^{}]+)\}',table_text)
 assert len(rows)==96*4*9, ('unexpected expanded table dimensions',len(rows))
 for wave in range(48,96):
     for frame in range(4):
