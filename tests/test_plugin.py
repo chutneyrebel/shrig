@@ -262,6 +262,14 @@ motion_on=osc2_motion(90)
 assert rms([a-b for a,b in zip(motion_off,motion_on)])>10, 'OSC2 must respond to motion'
 setp('lfo_depth',0)
 print('PASS: independent stereo pan and OSC2 wavetable motion')
+# Optional WT LFO control must be readable and remain neutral by default.
+assert getp('lfo_wt_depth')=='0'
+setp('lfo_wt_depth',100)
+assert getp('lfo_wt_depth')=='100'
+setp('lfo_wt_depth',0)
+assert getp('lfo_wt_depth')=='0'
+assert 'lfo_wt_depth' in (ROOT/'src/web_ui.html').read_text()
+print('PASS: opt-in WT LFO depth control and legacy-neutral default')
 # Warp regression: each mode must preserve neutral at zero amount and
 # produce distinct audio at strong settings on either oscillator.
 # Create a fresh instance for each render to eliminate phase/history drift.
