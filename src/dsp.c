@@ -42,7 +42,7 @@ typedef struct {
     int wavetable, shape, wave, wt_bank, wt_table, spectral_shape, legacy_shape, position, cutoff, resonance, attack, decay, sustain, release, level;
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
-    int osc2_level, detune, lfo_rate, lfo_depth, drive;
+    int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter;
     float lfo_phase;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level;
@@ -92,7 +92,7 @@ static void defaults(Synth *s){
     s->attack=10;s->decay=230;s->sustain=72;s->release=240;s->level=65;
     s->osc1_warp_type=0;s->osc1_warp=0;s->osc1_detune=50;s->osc1_octave=2;s->osc1_pan=50;s->osc1_volume=100;
     s->osc2_wavetable=1;s->osc2_position=50;s->osc2_warp_type=0;s->osc2_warp=0;s->osc2_detune=50;s->osc2_octave=2;s->osc2_pan=50;s->osc2_volume=0;
-    s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->drive=0;
+    s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->lfo_wt_depth=0;s->drive=0;
     s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;
     s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=1;s->smooth_shape=50;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
@@ -156,7 +156,7 @@ static const Param params[]={
     P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
-    P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(drive,100),
+    P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
     P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
@@ -318,8 +318,8 @@ static void render_block(void *instance,int16_t *out,int frames){
         if(s->lfo_phase>=256.f)s->lfo_phase-=256.f;
         float lfo=lookup(0,0,0,s->lfo_phase);
         float wave=clampf(s->smooth_wave,0,3);
-        float pos=clampf(s->smooth_position + .015f*s->lfo_depth*lfo,0,3);
-        float pos2=clampf(.03f*(float)s->osc2_position + .015f*s->lfo_depth*lfo,0.f,3.f);
+        float pos=clampf(s->smooth_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo,0,3);
+        float pos2=clampf(.03f*(float)s->osc2_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo,0.f,3.f);
         float k=2.f-1.9f*s->smooth_res;
         float sumL=0.f,sumR=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
