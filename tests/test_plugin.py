@@ -60,6 +60,12 @@ meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert len(meta['capabilities']['chain_params'])==19
+# v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
+chain_params=json.loads(getp('chain_params'))
+assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
+face=next((p for p in chain_params if p.get('key')=='face'), None)
+assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
+assert face['canvas_script']=='canvas.js'
 hierarchy=json.loads(getp('ui_hierarchy'))
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
@@ -120,6 +126,6 @@ insts=[api.create(b'.',None) for _ in range(7)]
 assert all(insts) and not api.create(b'.',None)
 for p in insts:api.destroy(p)
 api.destroy(inst)
-print('PASS: ABI, render, MIDI, polyphony, wavetable position, enum, state, clamp, limit')
+print('PASS: ABI, v1.9 chain_params/canvas contract, render, MIDI, polyphony, wavetable position, enum, state, clamp, limit')
 print('Mono audio RMS:',round(rms(played),1))
 print('Polyphony audio RMS:',round(rms(poly),1))
