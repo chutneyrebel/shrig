@@ -68,9 +68,9 @@ assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wt_bank','bank_select'], 'Expanded oscillator controls must be visible on root Move knobs'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wt_bank','bank_select','position']
-assert len(meta['capabilities']['chain_params'])==26
+assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wavetable','position'], 'Expanded oscillator controls must be visible on root Move knobs'
+assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wavetable','position','shape']
+assert len(meta['capabilities']['chain_params'])==28
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -122,37 +122,22 @@ assert rms([a-b for a,b in zip(x,y)])>100, 'Position parameter is not audible'
 setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
-# Stage 3A.3: the fourth knob is bank-sensitive when the host refreshes hierarchy.
-setp('wt_bank',1)
-expanded_hierarchy=json.loads(getp('ui_hierarchy'))
-assert expanded_hierarchy['levels']['root']['knobs'][3]=='bank_shape'
-assert 'spectral_shape' in expanded_hierarchy['levels']['osc']['params']
-setp('spectral_shape',0)
-assert getp('spectral_shape')=='0'
-setp('spectral_shape',100)
-assert getp('spectral_shape')=='100'
-setp('spectral_shape',50)
-setp('wt_bank',0)
-assert json.loads(getp('ui_hierarchy'))['levels']['root']['knobs'][3]=='bank_shape'
-assert getp('wave') in ('0','1','2','3')
-# Expanded bank is opt-in: old state without new keys must stay in Legacy.
-setp('wt_bank',1);setp('wt_table',47)
-assert getp('wt_bank')=='1' and getp('wt_table')=='47'
-# Spectral Shape must affect audio, not just UI metadata.
-setp('spectral_shape',0)
+# Unified selection exposes all 52 waveforms without a bank switch.
+assert json.loads(getp('ui_hierarchy'))['levels']['root']['knobs'][:3]==['wavetable','position','shape']
+setp('wavetable',0);assert getp('wavetable')=='0'
+setp('wavetable',51);assert getp('wavetable')=='51'
+setp('wavetable',999);assert getp('wavetable')=='51'
+setp('wavetable',4);setp('shape',0)
 dark=sample_with(1,50)
-setp('spectral_shape',100)
+setp('shape',100)
 bright=sample_with(1,50)
-assert rms([a-b for a,b in zip(dark,bright)])>50, 'Spectral Shape must audibly alter the expanded waveform'
-setp('spectral_shape',50)
-expanded=sample_with(1,50)
-setp('wt_bank',0)
-legacy=sample_with(1,50)
-assert rms([a-b for a,b in zip(expanded,legacy)])>100
-setp('wt_bank',1);setp('wt_table',999)
-assert getp('wt_table')=='47'
-setp('wt_bank',0);setp('wt_table',0)
-assert getp('wt_bank')=='0'
+assert rms([a-b for a,b in zip(dark,bright)])>50, 'Unified Shape must change the sound'
+setp('shape',50)
+setp('wavetable',1)
+classic=sample_with(1,50)
+setp('wavetable',40)
+spectral=sample_with(1,50)
+assert rms([a-b for a,b in zip(classic,spectral)])>100, 'Unified table selector must change audio'
 # Round-trip presets and clamp out-of-range writes.
 setp('attack',112);setp('cutoff',35);setp('level',70)
 state=getp('state')
@@ -179,14 +164,3 @@ print('PASS: ABI, v1.9 chain_params/canvas contract, render, MIDI, polyphony, wa
 print('Mono audio RMS:',round(rms(played),1))
 print('Polyphony audio RMS:',round(rms(poly),1))
 
-# Cached host mapping: the same proxy keys must resolve to bank-specific targets.
-setp('wt_bank',0);setp('bank_select',3);setp('bank_shape',20)
-assert getp('wave')=='3' and getp('legacy_shape')=='20'
-assert getp('bank_select')=='3' and getp('bank_shape')=='20'
-setp('wt_bank',1);setp('bank_select',47);setp('bank_shape',85)
-assert getp('wt_table')=='47' and getp('spectral_shape')=='85'
-assert getp('wave')=='3' and getp('legacy_shape')=='20'
-assert getp('bank_select')=='47' and getp('bank_shape')=='85'
-setp('wt_bank',0)
-assert getp('bank_select')=='3' and getp('bank_shape')=='20'
-print('PASS: cached physical knob proxies preserve independent bank controls')
