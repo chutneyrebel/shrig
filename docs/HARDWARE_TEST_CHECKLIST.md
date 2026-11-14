@@ -1,12 +1,12 @@
 # Sprig WT v0.2.1: consolidated Ableton Move hardware-test checklist
 
-Status: **Preparation only. Do not install until native page registration is completed and the release is explicitly marked hardware-test-ready.**
+Status: **Four-page registration is implemented; source-level CI validation is being strengthened. Do not install until the consolidated release is explicitly marked hardware-test-ready.**
 
 ## Preflight
 - [ ] Latest main GitHub Actions build passes desktop ABI/audio, canvas, ARM64 packaging and integrity tests.
 - [ ] Verify the downloaded GitHub Actions artifact is a ZIP containing `sprig-wt-module.tar.gz`; extract the ZIP once.
 - [ ] Back up current Schwung configuration, projects and Sprig WT presets before replacing the module.
-- [ ] Confirm native MAIN, OSC 1, OSC 2 and FILTER pages are actually registered and reachable on Move. Distinct drawing functions alone do **not** prove hardware page navigation.
+- [x] Register native MAIN, OSC 1, OSC 2 and FILTER canvas pages in the DSP chain ABI and root hierarchy.\n- [ ] Confirm those pages are reachable and render correctly on the physical Move. Source-level tests cannot prove hardware page navigation.
 
 ## Audio and controls
 - [ ] Load a known existing preset (IDs 0–99); confirm it sounds and recalls the same settings.
@@ -31,4 +31,4 @@ Status: **Preparation only. Do not install until native page registration is com
 - [ ] Record Schwung version, Move firmware, build commit, installed artifact and reproduction steps for any issue.
 - [ ] If anything fails, restore the backed-up module and preset state.
 
-**Release gate:** Do not call v0.2.1 hardware-test-ready until native four-page registration is verified in source and CI, the build passes, and the consolidated archive is identified.
+**Release gate:** Do not call v0.2.1 hardware-test-ready until native four-page registration is verified in source and CI, the build passes, the consolidated archive is identified, and the hardware test instructions are finalized. Physical navigation remains a required hardware acceptance test.
