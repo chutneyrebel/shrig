@@ -136,7 +136,7 @@
     const motion=bounded(value(v,'lfo_depth',0),0,0,100)+bounded(value(v,'lfo_wt_depth',0),0,0,100);
     const rate=bounded(value(v,'lfo_rate',22),22,0,100);
     const seconds=Number.isFinite(o&&o.nowMs)?o.nowMs/1000:frame/30;
-    const drift=voices>0?motion*.0012*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
+    const drift=voices>0?motion*.005*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
     if(which==='filter'){
       const cutoff=bounded(value(v,'cutoff',78),78,0,100);
       const res=bounded(value(v,'resonance',15),15,0,100);
@@ -187,7 +187,7 @@
       /* Motion depth shapes the visual only while a voice is sounding. */
       const hz=.06+.12*rate;
       const drift=depth*.12*Math.sin(seconds*hz*6.28318530718);
-      const animatedPos=Math.max(0,Math.min(1,pos+depth*.12*Math.sin(seconds*hz*6.28318530718)));
+      const animatedPos=Math.max(0,Math.min(1,pos+depth*.5*Math.sin(seconds*hz*6.28318530718)));
       /* The host already draws the active encoder's label and value in its
        * own header. Duplicating that feedback inside drawPage creates two
        * overlapping rows on the actual Move display. Keep this page visual. */
