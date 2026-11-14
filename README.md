@@ -77,3 +77,8 @@ The host audio suite now checks Off plus all seven active warp modes separately 
 ### Four-face native UI development (not yet hardware-ready)
 
 `src/canvas.js` now contains distinct MAIN, OSC 1, OSC 2 and FILTER drawing functions, with host-side tests for unique traces and meters. The current Schwung metadata still registers only one native canvas page. The four renderers are **not yet four hardware jog-wheel pages**: separate `as_page` declarations and host-compatible overlay selection remain to be wired and tested before the consolidated v0.2.1 hardware test. The FILTER graphic is an illustrative low-pass response, not a measured DSP frequency response; the audio filter remains low-pass only.
+
+
+### Wavetable expansion in development (v0.2.1)
+
+The unified oscillator selector now targets **100 waveforms per oscillator**: IDs 0–3 retain the original classic tables, IDs 4–51 retain the existing 48 generated spectral tables, and IDs 52–99 add 48 new spectral tables in 12 families (formant peaks, dual peaks, spectral notches, sparse clusters, nonlinear ripples, periodic partial selection, resonant combs and moving clusters). Every expanded table has four morph frames and nine pitch-dependent band-limited versions, generated before compilation with no runtime sample loading. Existing IDs remain stable. This is still a **procedurally generated wavetable library**, not user WAV import, and the native four-page registration is still pending. Test the expanded library, warp engine and four-page hardware navigation together only after the full v0.2.1 release is marked ready.
