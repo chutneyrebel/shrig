@@ -86,6 +86,13 @@ for wave in range(48,96):
             assert abs(sum(samples)/256)<0.0001,(wave,frame,band,'DC bias')
             assert max(abs(x) for x in samples)<=0.871,(wave,frame,band,'headroom')
 print('PASS: all new wavetable frames are DC-centered with safe headroom')
+# Remote category browser must expose stable ranges for both oscillators.
+remote=(ROOT/'src/web_ui.html').read_text()
+for label in ('Classic','Original Spectral','Organic / Atmospheric','Industrial / Metallic','Vocal / Formant'):
+    assert label in remote, ('missing wavetable category',label)
+for boundary in ('0,3','4,51','52,67','68,83','84,99'):
+    assert boundary in remote, ('missing wavetable range',boundary)
+assert "categoryPicker(key)" in remote and "'osc2_wavetable'" in remote
 # Stage 3A architecture guard: legacy tables and preset IDs stay untouched.
 header=(ROOT/'src/wavetable_engine.h').read_text()
 assert '#define SPRIG_LEGACY_BANK 0' in header
