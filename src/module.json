@@ -29,6 +29,26 @@
         "default": 1
       },
       {
+        "key": "wt_bank",
+        "name": "WT Bank",
+        "type": "enum",
+        "options": [
+          "Legacy",
+          "Expanded"
+        ],
+        "peek": false,
+        "default": 0
+      },
+      {
+        "key": "wt_table",
+        "name": "WT Table",
+        "type": "int",
+        "min": 0,
+        "max": 31,
+        "step": 1,
+        "default": 0
+      },
+      {
         "key": "position",
         "name": "WT Position",
         "type": "float",
@@ -271,12 +291,16 @@
           "label": "Oscillators",
           "knobs": [
             "wave",
+            "wt_bank",
+            "wt_table",
             "position",
             "osc2_level",
             "detune"
           ],
           "params": [
             "wave",
+            "wt_bank",
+            "wt_table",
             "position",
             "osc2_level",
             "detune"
