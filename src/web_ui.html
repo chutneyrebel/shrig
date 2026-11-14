@@ -68,7 +68,7 @@ function control(key,name,min,max,step){
  if(key==='wave'||key==='wt_bank'||warpType||octaveType)(octaveType?octaveNames:warpType?warpNames:key==='wave'?waveNames:bankNames).forEach((w,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=w;input.append(opt)});
  else{input.type='range';input.min=min;input.max=max;input.step=step;}
  input.setAttribute('aria-label',name);
- const change=()=>{val.textContent=octaveType?octaveNames[+input.value]:warpType?warpNames[+input.value]:key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=(curatedIds.has(Number(input.value))?String(input.value):'legacy');if(['wavetable','position','shape'].includes(key))drawWave()};
+ const change=()=>{val.textContent=octaveType?octaveNames[+input.value]:warpType?warpNames[+input.value]:key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=(curatedIds.has(Number(input.value))?String(input.value):'legacy');if(['wavetable','osc2_wavetable','position','shape'].includes(key))drawWave()};
  input.addEventListener('input',change);input.addEventListener('change',change);
  root.append(input);fields[key]={input,val};return root;
 }
