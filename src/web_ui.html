@@ -94,7 +94,7 @@ function coreSample(id,frame,phase){
   else if(core===4){w=.08*bell(1,.42)+bell(7+frame*3,.42)+.8*bell(19+frame*4,.42)+.5*bell(37-frame*2,.42);shift=h*h*.17;}
   else if(core===5){w=.65*bell(2,1.2)+bell(8+frame*5,1.2)+.9*bell(27-frame*4,1.2)+.7*bell(43-frame*3,1.2);shift=h*h*(.23+.12*t);}
   else if(core===6){w=(h===1?.9-.65*t:.025/h)+(.08+1.35*t)*bell(3+18*t,1.3+3.2*t);shift=.3*Math.sin(h*.3+t*3);}
-  else if(core===7){if(frame===0)w=h===1?.9:0;else if(frame===1)w=(h%7===1?1:.005)/Math.pow(h,.25);else if(frame===2)w=([3,11,23,41].includes(h)?1:.002)/Math.pow(h,.12);else w=(h%2===0?1:.001)/Math.pow(h,.1);shift=h*h*(.13+.15*t);}
+  else if(core===7){if(frame===0)w=h===1?.28:h===5?.9:h===11?.6:0;else if(frame===1)w=(h%7===1?1:.005)/Math.pow(h,.25);else if(frame===2)w=([3,11,23,41].includes(h)?1:.002)/Math.pow(h,.12);else w=(h%2===0?1:.001)/Math.pow(h,.1);shift=h*h*(.13+.15*t);}
   v+=w*Math.sin(h*p+shift+.13*frame*h+.07*((id-4)%4)*h);
  }
  return v;
