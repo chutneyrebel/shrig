@@ -32,7 +32,7 @@ typedef struct plugin_api_v2 {
 
 typedef struct {
     float phase, phase2, increment, env, vel, release_step;
-    float ic1, ic2, filter_env, smooth_cut;
+    float ic1, ic2, ic1_r, ic2_r, filter_env, smooth_cut;
     uint8_t filter_stage;
     unsigned age;
     uint8_t note, band, stage, down;
@@ -249,7 +249,7 @@ static float env_next(Synth *s,Voice *v){
         case SUSTAIN:v->env=sus;break;
         case RELEASE:
             v->env-=v->release_step;
-            if(v->env<=0.f){v->env=0.f;v->stage=0;v->ic1=0;v->ic2=0;}break;
+            if(v->env<=0.f){v->env=0.f;v->stage=0;v->ic1=0;v->ic2=0;v->ic1_r=0;v->ic2_r=0;}break;
         default:return 0;
     }
     return v->env;
@@ -283,7 +283,7 @@ static float warp_phase(float p,int mode,float amount){
     else if(mode==4){float q=.5f+.45f*a;p=p<q?.5f*p/q:.5f+.5f*(p-q)/(1.f-q);}
     else if(mode==5){float q=.5f-.4f*a;p=p<q?.5f*p/q:.5f+.5f*(p-q)/(1.f-q);}
     else if(mode==6){float q=p*(1.f+2.f*a);int n=(int)q;p=(n&1)?1.f-(q-n):q-n;}
-    else if(mode==7){float steps=2.f+30.f*(1.f-a);p=(float)(int)(p*steps)/steps;}
+    else if(mode==7){float steps=64.f-60.f*a;p=(float)(int)(p*steps)/steps;}
     return clampf(p,0.f,.99999f);
 }
 static float table_at(int table,float position,int band,float phase){
@@ -318,8 +318,9 @@ static void render_block(void *instance,int16_t *out,int frames){
         float lfo=lookup(0,0,0,s->lfo_phase);
         float wave=clampf(s->smooth_wave,0,3);
         float pos=clampf(s->smooth_position + .015f*s->lfo_depth*lfo,0,3);
+        float pos2=clampf(.03f*(float)s->osc2_position + .015f*s->lfo_depth*lfo,0.f,3.f);
         float k=2.f-1.9f*s->smooth_res;
-        float sum=0.f;
+        float sumL=0.f,sumR=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
             float env=env_next(s,v);if(!v->stage)continue;
@@ -337,15 +338,18 @@ static void render_block(void *instance,int16_t *out,int frames){
             }
             x*=.01f*s->osc1_volume;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,(float)s->osc2_warp)*256.f;
-            float second=table_at(s->osc2_wavetable,.03f*s->osc2_position,v->band,p2)*(.01f*s->osc2_volume);
+            float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*s->osc2_volume);
             second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);
-            x+=second;
+            float pan1=.01f*(float)s->osc1_pan,pan2=.01f*(float)s->osc2_pan;
+            float left=x*(1.f-pan1)+second*(1.f-pan2);
+            float right=x*pan1+second*pan2;
+            x=left+right;
             v->phase2+=v->increment*(1.f+.0005776f*((float)s->osc2_detune-50.f));
             if(v->phase2>=256.f)v->phase2-=256.f;
             v->phase+=v->increment*(1.f+.0005776f*((float)s->osc1_detune-50.f));
             if(v->phase>=256.f)v->phase-=256.f;
             /* Soft clipping before filter: independent nonlinear shaper. */
-            if(s->drive>0){float d=.03f*(float)s->drive;float u=x*(1.f+d);x=u/(1.f+(u<0.f?-u:u)*d*.25f);}
+            if(s->drive>0){float d=.03f*(float)s->drive;float u=left*(1.f+d);left=u/(1.f+(u<0.f?-u:u)*d*.25f);u=right*(1.f+d);right=u/(1.f+(u<0.f?-u:u)*d*.25f);}
             /* Triggered filter envelope (attack then decay to zero). */
             if(v->filter_stage==1){
                 float denom=(float)s->filter_env_attack*.001f*SR;
@@ -363,16 +367,22 @@ static void render_block(void *instance,int16_t *out,int frames){
             int ci=clampi((int)(v->smooth_cut+.5f),0,100);
             float g=sprig_cutoff_g[ci];
             float a1=1.f/(1.f+g*(g+k)),a2=g*a1,a3=g*a2;
-            float v3=x-v->ic2;
+            float v3=left-v->ic2;
             float v1=a1*v->ic1+a2*v3;
             float v2=v->ic2+a2*v->ic1+a3*v3;
             v->ic1=2*v1-v->ic1;
             v->ic2=2*v2-v->ic2;
-            sum+=v2*env*v->vel;
+            float v3r=right-v->ic2_r;
+            float v1r=a1*v->ic1_r+a2*v3r;
+            float v2r=v->ic2_r+a2*v->ic1_r+a3*v3r;
+            v->ic1_r=2*v1r-v->ic1_r;
+            v->ic2_r=2*v2r-v->ic2_r;
+            sumL+=v2*env*v->vel;
+            sumR+=v2r*env*v->vel;
         }
         /* Conservative poly mix to prevent clipping with eight voices. */
-        int16_t y=pcm(sum*.24f*s->smooth_level);
-        out[2*j]=y;out[2*j+1]=y;
+        out[2*j]=pcm(sumL*.48f*s->smooth_level);
+        out[2*j+1]=pcm(sumR*.48f*s->smooth_level);
     }
 }
 static plugin_api_v2_t api={2,create_instance,destroy_instance,on_midi,set_param,get_param,get_error,render_block};
