@@ -18,10 +18,36 @@
     const shape = [sine, saw, sq, tri][Math.max(0, Math.min(3, wave | 0))];
     return shape * (1 - .19 * pos) + .19 * pos * Math.sin(phase * 18.84955592);
   }
-  function trace(ctx, x, y, w, h, wave, pos, drift) {
+  /* Visual approximation of the generated spectral families, not an audio readback.
+   * Cap at 24 harmonics to keep the Move canvas render lightweight. */
+  function expandedWave(phase, table, pos) {
+    const family=Math.floor(table/4),variant=table%4;
+    const frame=pos*3;
+    const tilt=1.15+.23*variant+.15*frame;
+    let sum=0,norm=0;
+    for(let h=1;h<=24;h++){
+      let weight=0;
+      if(family===0)weight=1/Math.pow(h,tilt);
+      else if(family===1)weight=(h%2?.98:.07)/Math.pow(h,tilt);
+      else if(family===2)weight=(h%3===1?1:.08)/Math.pow(h,tilt);
+      else if(family===3)weight=(h%4===1?1:.04)/Math.pow(h,tilt);
+      else if(family===4)weight=(.2+.8*Math.abs(Math.sin(h*(.55+.12*variant)+frame*.2)))/Math.pow(h,tilt);
+      else if(family===5)weight=(Math.abs(h-(3+variant*2+frame*2))<=2?1:.06)/Math.pow(h,.7+.12*frame);
+      else if(family===6)weight=([1,2+variant,5+Math.round(frame),9+variant*2].includes(h)?1:.02)/Math.pow(h,.6+.1*frame);
+      else weight=(.1+.9*Math.abs(Math.cos(h*(1.2+.13*variant)+frame*.3)))/Math.pow(h,tilt);
+      sum+=weight*Math.sin(h*phase*6.28318530718+.13*frame*h+.07*variant*h);
+      norm+=weight;
+    }
+    return Math.max(-1,Math.min(1,sum/Math.max(.6,norm*.55)));
+  }
+  function displayedWave(phase,wave,pos,bank,table){
+    const legacy=waveform(phase,wave,pos);
+    return bank?expandedWave(phase,table,pos):legacy;
+  }
+  function trace(ctx, x, y, w, h, wave, pos, drift, bank, table) {
     let lastX=x,lastY=y+h/2;
     for(let i=0;i<w;i++){
-      const v=waveform((i/w + drift) % 1,wave,pos);
+      const v=displayedWave((i/w + drift) % 1,wave,pos,bank,table);
       const py=y+Math.round(h/2-v*(h/2-2));
       if(i)ctx.line(lastX,lastY,x+i,py,1);
       lastX=x+i;lastY=py;
@@ -34,6 +60,8 @@
       const W=ctx.width||128,H=ctx.height||40;
       if(W<32||H<18)return;
       const wave=bounded(value(v,"wave",1),1,0,3)|0;
+      const bank=bounded(value(v,"wt_bank",0),0,0,1)|0;
+      const table=bounded(value(v,"wt_table",0),0,0,31)|0;
       const pos=bounded(value(v,"position",50),50,0,100)/100;
       const cut=bounded(value(v,"cutoff",78),78,0,100);
       const motion=bounded(value(v,"lfo_depth",0),0,0,100);
@@ -56,7 +84,7 @@
        * own header. Duplicating that feedback inside drawPage creates two
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
-      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift);
+      trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table);
       /* A sparse second harmonic contour gives the technical trace an organic
        * shimmer. It exists only while voices sound and Motion is substantial.
        * The base waveform remains unchanged and idle stays perfectly still. */
@@ -66,7 +94,7 @@
         const ghostPos=Math.max(0,Math.min(1,animatedPos+shimmer));
         for(let i=0;i<width;i+=4){
           const phase=(i/width+drift*.6+shimmer*.15)%1;
-          const v0=waveform(phase<0?phase+1:phase,wave,ghostPos);
+          const v0=displayedWave(phase<0?phase+1:phase,wave,ghostPos,bank,table);
           const py=y0+Math.round(height/2-v0*(height/2-2)*.78);
           ctx.fillRect(x0+i,py,1,1,1);
         }
