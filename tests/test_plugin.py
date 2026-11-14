@@ -124,11 +124,11 @@ assert rms([a-b for a,b in zip(x,y)])>100, 'Position parameter is not audible'
 setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
-# Unified selection exposes all 52 waveforms without a bank switch.
+# Unified selection exposes all 100 waveforms without a bank switch.
 assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_warp_type']
 setp('wavetable',0);assert getp('wavetable')=='0'
-setp('wavetable',51);assert getp('wavetable')=='51'
-setp('wavetable',999);assert getp('wavetable')=='51'
+setp('wavetable',99);assert getp('wavetable')=='99'
+setp('wavetable',999);assert getp('wavetable')=='99'
 setp('wavetable',4);setp('shape',0)
 dark=sample_with(1,50)
 setp('shape',100)
@@ -137,7 +137,7 @@ assert rms([a-b for a,b in zip(dark,bright)])>50, 'Unified Shape must change the
 setp('shape',50)
 setp('wavetable',1)
 classic=sample_with(1,50)
-setp('wavetable',40)
+setp('wavetable',88)
 spectral=sample_with(1,50)
 assert rms([a-b for a,b in zip(classic,spectral)])>100, 'Unified table selector must change audio'
 # Round-trip presets and clamp out-of-range writes.
@@ -239,7 +239,7 @@ print('Polyphony audio RMS:',round(rms(poly),1))
 
 
 # Independent oscillator controls are exposed and bounded.
-for k,hi in [('osc1_warp_type',7),('osc2_warp_type',7),('osc2_wavetable',51),('osc1_pan',100),('osc2_pan',100),('osc1_volume',100),('osc2_volume',100)]:
+for k,hi in [('osc1_warp_type',7),('osc2_warp_type',7),('osc2_wavetable',99),('osc1_pan',100),('osc2_pan',100),('osc1_volume',100),('osc2_volume',100)]:
     setp(k,999)
     assert getp(k)==str(hi),(k,getp(k))
 setp('osc1_warp_type',0);setp('osc1_warp',0);setp('osc1_volume',100)
