@@ -355,7 +355,8 @@ static void render_block(void *instance,int16_t *out,int frames){
         float sumL=0.f,sumR=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
-            float env=env_next(s,v),amp1=osc_amp(s,v,0),amp2=osc_amp(s,v,1);if(!v->stage&&amp1<=0.f&&amp2<=0.f)continue;if(v->stage==RELEASE&&env<=0.f&&amp1<=0.f&&amp2<=0.f){v->stage=0;continue;}float bal=.01f*s->mix_balance,gain1=s->mix_enabled?2.f*(1.f-bal):1.f,gain2=s->mix_enabled?2.f*bal:1.f;
+            float env=env_next(s,v),amp1=osc_amp(s,v,0),amp2=osc_amp(s,v,1);if(!v->stage&&amp1<=0.f&&amp2<=0.f)continue;if(v->stage==RELEASE&&env<=0.f&&amp1<=0.f&&amp2<=0.f){v->stage=0;continue;}int newmode=s->mix_enabled||s->osc1_env_enabled||s->osc2_env_enabled;
+            float bal=.01f*s->mix_balance,gain1=s->mix_enabled?2.f*(1.f-bal):1.f,gain2=s->mix_enabled?2.f*bal:1.f;
             float table=clampf(s->smooth_table,0.f,107.f);
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
             float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,(float)s->osc1_warp)*256.f;
@@ -368,10 +369,10 @@ static void render_block(void *instance,int16_t *out,int frames){
                 float avg=.5f*(table_at(t0,pos,v->band,ph1)+table_at(t0,pos,v->band,ph2));
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
-            x*=.01f*s->osc1_volume*gain1*amp1;
+            x*=.01f*s->osc1_volume;if(newmode)x*=gain1*amp1;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,(float)s->osc2_warp)*256.f;
             float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*s->osc2_volume);
-            second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);second*=gain2*amp2;
+            second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
             float pan1=.01f*(float)s->osc1_pan,pan2=.01f*(float)s->osc2_pan;
             float left=x*(1.f-pan1)+second*(1.f-pan2);
             float right=x*pan1+second*pan2;
@@ -409,8 +410,8 @@ static void render_block(void *instance,int16_t *out,int frames){
             float v2r=v->ic2_r+a2*v->ic1_r+a3*v3r;
             v->ic1_r=2*v1r-v->ic1_r;
             v->ic2_r=2*v2r-v->ic2_r;
-            sumL+=v2*v->vel;
-            sumR+=v2r*v->vel;
+            sumL+=v2*(newmode?1.f:env)*v->vel;
+            sumR+=v2r*(newmode?1.f:env)*v->vel;
         }
         /* Conservative poly mix to prevent clipping with eight voices. */
         float pan=clampf(s->smooth_master_pan,0.f,100.f);
