@@ -28,11 +28,12 @@ footer{color:var(--dim);font-size:11px;padding-top:13px;line-height:1.5}
 <script>
 'use strict';
 const groups={
- osc:[['wavetable','OSC 1 Wavetable',0,99,1],['position','WT Position',0,100,1],['shape','Shape',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1],['osc2_wavetable','OSC 2 Wavetable',0,99,1],['osc2_position','OSC 2 WT Position',0,100,1]],
+ osc:[['wavetable','OSC 1 Wavetable',0,99,1],['position','WT Position',0,100,1],['shape','Shape',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1],['osc2_wavetable','OSC 2 Wavetable',0,99,1],['osc2_position','OSC 2 WT Position',0,100,1],['osc1_warp_type','OSC 1 Warp Type',0,7,1],['osc1_warp','OSC 1 Warp Amount',0,100,1],['osc2_warp_type','OSC 2 Warp Type',0,7,1],['osc2_warp','OSC 2 Warp Amount',0,100,1]],
  tone:[['cutoff','Cutoff',0,100,1],['resonance','Resonance',0,100,1],['drive','Drive',0,100,1],['filter_env_amt','Filter EG Amount',0,100,1],['filter_env_attack','Filter EG Attack',0,2000,1],['filter_env_decay','Filter EG Decay',0,2000,1],['level','Output',0,100,1]],
  motion:[['lfo_rate','Motion Rate',0,100,1],['lfo_depth','Motion Depth',0,100,1],['lfo_filter','Motion Filter',0,100,1]],
  amp:[['attack','Attack',0,2000,1],['decay','Decay',0,2000,1],['sustain','Sustain',0,100,1],['release','Release',0,2000,1]]
 };
+const warpNames=['Off','Sync','Bend+','Bend−','PWM','Asym','Mirror','Quant'];
 const waveNames=['Sine','Saw','Square','Triangle'];const bankNames=['Legacy','Expanded'];const fields={};
 // Stable ID ranges: older presets keep their original numeric IDs.
 const wtCategories=[
@@ -57,11 +58,12 @@ function control(key,name,min,max,step){
  const label=document.createElement('label');label.textContent=name;
  const val=document.createElement('output');val.textContent='…';
  const line=document.createElement('span');line.append(label,val);root.append(line);
- const input=(key==='wave'||key==='wt_bank')?document.createElement('select'):document.createElement('input');
- if(key==='wave'||key==='wt_bank')(key==='wave'?waveNames:bankNames).forEach((w,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=w;input.append(opt)});
+ const warpType=key==='osc1_warp_type'||key==='osc2_warp_type';
+ const input=(key==='wave'||key==='wt_bank'||warpType)?document.createElement('select'):document.createElement('input');
+ if(key==='wave'||key==='wt_bank'||warpType)(warpType?warpNames:key==='wave'?waveNames:bankNames).forEach((w,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=w;input.append(opt)});
  else{input.type='range';input.min=min;input.max=max;input.step=step;}
  input.setAttribute('aria-label',name);
- const change=()=>{val.textContent=key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(Number(input.value))[1]);if(['wavetable','position','shape'].includes(key))drawWave()};
+ const change=()=>{val.textContent=warpType?warpNames[+input.value]:key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(Number(input.value))[1]);if(['wavetable','position','shape'].includes(key))drawWave()};
  input.addEventListener('input',change);input.addEventListener('change',change);
  root.append(input);fields[key]={input,val};return root;
 }
@@ -71,7 +73,7 @@ for(const key of ['wavetable','osc2_wavetable']){
  document.getElementById('osc').insertBefore(item.wrapper,fields[key].input.parentElement);
 }
 ;
-function update(key,v){const f=fields[key];if(!f)return;const n=Number(v);if(!Number.isFinite(n))return;f.input.value=String(n);f.val.textContent=key==='wave'?waveNames[n]||String(n):key==='wt_bank'?bankNames[n]||String(n):String(n);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(n)[1]);if(['wave','position','wt_bank','wt_table','spectral_shape'].includes(key))drawWave()}
+function update(key,v){const f=fields[key];if(!f)return;const n=Number(v);if(!Number.isFinite(n))return;f.input.value=String(n);f.val.textContent=(key==='osc1_warp_type'||key==='osc2_warp_type')?(warpNames[n]||String(n)):key==='wave'?waveNames[n]||String(n):key==='wt_bank'?bankNames[n]||String(n):String(n);if(categoryPickers[key])categoryPickers[key].value=String(wtCategory(n)[1]);if(['wave','position','wt_bank','wt_table','spectral_shape'].includes(key))drawWave()}
 function drawWave(){
  const canvas=document.getElementById('scope'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);ctx.strokeStyle='#2b3844';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
