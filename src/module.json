@@ -210,11 +210,19 @@
         "page_first": true,
         "show_value": false,
         "extra_keys": [
-          "position",
+          "voice_activity",
           "cutoff",
           "lfo_depth",
           "filter_env_amt"
         ]
+      },
+      {
+        "key": "voice_activity",
+        "name": "Voice Activity",
+        "type": "int",
+        "min": 0,
+        "max": 8,
+        "access": "read"
       }
     ],
     "ui_hierarchy": {
