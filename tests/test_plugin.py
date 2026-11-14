@@ -8,6 +8,7 @@ from pathlib import Path
 import statistics
 import subprocess
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Sprig WT metadata exceeds 8 KB'
@@ -253,6 +254,24 @@ for idx in range(8):
     for pos in (0,50,100):
         curated_stress(100+idx,100+(idx+3)%8,pos)
 print('PASS: 24 dual-oscillator curated render stress cases with maximum WT modulation')
+
+# Diagnostic host-side render throughput, deliberately not a CI pass/fail gate.
+# Desktop measurements cannot predict Move ARM64 CPU use.
+bench=api.create(b'.',None)
+assert bench
+for key,val in [('wavetable',106),('osc2_wavetable',107),('osc1_volume',100),('osc2_volume',100),('lfo_wt_depth',100)]:
+    api.set(bench,key.encode(),str(val).encode())
+for note in range(48,56):
+    msg=(C.c_uint8*3)(0x90,note,100)
+    api.midi(bench,msg,3,0)
+bench_buffer=(C.c_int16*256)()
+for _ in range(16):api.render(bench,bench_buffer,128)
+start=time.perf_counter()
+for _ in range(512):api.render(bench,bench_buffer,128)
+elapsed=time.perf_counter()-start
+api.destroy(bench)
+print(f'DIAGNOSTIC: host 8-note curated dual-oscillator render: {elapsed*1000:.1f} ms for 65536 frames (not Move CPU usage)')
+
 # Preserve curated oscillator IDs, morph positions and opt-in modulation in presets.
 # Exercise both oscillators and restore the original state before legacy tests.
 before_curated=getp('state')
