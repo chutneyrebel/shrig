@@ -28,7 +28,7 @@ footer{color:var(--dim);font-size:11px;padding-top:13px;line-height:1.5}
 <script>
 'use strict';
 const groups={
- osc:[['wavetable','OSC 1 Wavetable',0,99,1],['position','WT Position',0,100,1],['shape','Shape',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1],['osc2_wavetable','OSC 2 Wavetable',0,99,1],['osc2_position','OSC 2 WT Position',0,100,1],['osc1_warp_type','OSC 1 Warp Type',0,7,1],['osc1_warp','OSC 1 Warp Amount',0,100,1],['osc2_warp_type','OSC 2 Warp Type',0,7,1],['osc2_warp','OSC 2 Warp Amount',0,100,1],['osc1_octave','OSC 1 Octave',0,4,1],['osc2_octave','OSC 2 Octave',0,4,1],['osc1_detune','OSC 1 Detune',0,100,1],['osc2_detune','OSC 2 Fine Detune',0,100,1],['osc2_volume','OSC 2 Volume',0,100,1]],
+ osc:[['wavetable','OSC 1 Wavetable',0,107,1],['position','WT Position',0,100,1],['shape','Shape',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1],['osc2_wavetable','OSC 2 Wavetable',0,107,1],['osc2_position','OSC 2 WT Position',0,100,1],['osc1_warp_type','OSC 1 Warp Type',0,7,1],['osc1_warp','OSC 1 Warp Amount',0,100,1],['osc2_warp_type','OSC 2 Warp Type',0,7,1],['osc2_warp','OSC 2 Warp Amount',0,100,1],['osc1_octave','OSC 1 Octave',0,4,1],['osc2_octave','OSC 2 Octave',0,4,1],['osc1_detune','OSC 1 Detune',0,100,1],['osc2_detune','OSC 2 Fine Detune',0,100,1],['osc2_volume','OSC 2 Volume',0,100,1]],
  tone:[['cutoff','Cutoff',0,100,1],['resonance','Resonance',0,100,1],['drive','Drive',0,100,1],['filter_env_amt','Filter EG Amount',0,100,1],['filter_env_attack','Filter EG Attack',0,2000,1],['filter_env_decay','Filter EG Decay',0,2000,1],['level','Output',0,100,1]],
  motion:[['lfo_rate','Motion Rate',0,100,1],['lfo_depth','Motion Depth',0,100,1],['lfo_filter','Motion Filter',0,100,1]],
  amp:[['attack','Attack',0,2000,1],['decay','Decay',0,2000,1],['sustain','Sustain',0,100,1],['release','Release',0,2000,1]]
@@ -39,11 +39,10 @@ const waveNames=['Sine','Saw','Square','Triangle'];const bankNames=['Legacy','Ex
 // Stable ID ranges: older presets keep their original numeric IDs.
 // Curated discovery only. Numeric IDs remain unchanged for existing presets.
 const curatedWaves=[
- ['Sine / Pure',0],['Saw / Bright',1],['Square / Hollow',2],['Triangle / Soft',3],
- ['Harmonic Bloom',4],['Odd Harmonics',8],['Spectral Ripple',20],
- ['Sparse Formant',28],['Spectral Comb',32],['Harmonic Gaps',44],
- ['Breathing Texture',52],['Glass Partials',56],['Reed Formant',60],
- ['Metallic Cluster',72],['Vowel Resonance',84],['Alien Spectral',96]
+ ['Pure · Fundamental',100],['Analog · Harmonic',101],
+ ['Hollow · Odd',102],['Vocal · Formant',103],
+ ['Glass · Bell',104],['Metal · Cluster',105],
+ ['Organic · Bloom',106],['Alien · Fracture',107]
 ];
 const curatedIds=new Set(curatedWaves.map(w=>w[1]));
 function categoryPicker(key){
