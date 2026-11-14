@@ -168,7 +168,7 @@ setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
 # Unified selection exposes all 100 waveforms without a bank switch.
-assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_warp_type']
+assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_octave']
 setp('wavetable',0);assert getp('wavetable')=='0'
 setp('wavetable',99);assert getp('wavetable')=='99'
 setp('wavetable',999);assert getp('wavetable')=='99'
