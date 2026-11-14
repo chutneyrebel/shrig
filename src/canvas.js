@@ -57,6 +57,20 @@
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
       trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift);
+      /* A sparse second harmonic contour gives the technical trace an organic
+       * shimmer. It exists only while voices sound and Motion is substantial.
+       * The base waveform remains unchanged and idle stays perfectly still. */
+      if(voices>0 && motion>=15){
+        const x0=1, y0=waveY+1, width=W-3, height=waveH;
+        const shimmer=depth*.16*Math.sin(seconds*hz*6.28318530718+1.57);
+        const ghostPos=Math.max(0,Math.min(1,animatedPos+shimmer));
+        for(let i=0;i<width;i+=4){
+          const phase=(i/width+drift*.6+shimmer*.15)%1;
+          const v0=waveform(phase<0?phase+1:phase,wave,ghostPos);
+          const py=y0+Math.round(height/2-v0*(height/2-2)*.78);
+          ctx.fillRect(x0+i,py,1,1,1);
+        }
+      }
       /* Tiny persistent signal meters keep the synth readable when idle. */
       const meters=[["C",cut],["M",motion],["E",env],["O",mix]];
       const y=H-9,cell=Math.floor(W/4);
