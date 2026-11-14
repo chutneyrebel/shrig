@@ -1,12 +1,13 @@
 # Sprig WT v0.2.1: consolidated Ableton Move hardware-test checklist
 
-Status: **Four-page registration is implemented; source-level CI validation is being strengthened. Do not install until the consolidated release is explicitly marked hardware-test-ready.**
+Status: **Four-page registration and CI validation passed at commit `30be12c`. Consolidated artifact verified present in GitHub Actions run `43643930257`. Hardware behavior remains untested.**
 
 ## Preflight
-- [ ] Latest main GitHub Actions build passes desktop ABI/audio, canvas, ARM64 packaging and integrity tests.
-- [ ] Verify the downloaded GitHub Actions artifact is a ZIP containing `sprig-wt-module.tar.gz`; extract the ZIP once.
+- [x] GitHub Actions run `43643930257` passed desktop ABI/audio, canvas, ARM64 packaging and integrity tests.
+- [x] Confirm the Actions artifact `sprig-wt-targz-download` exists and is unexpired. Downloading and extracting it is still a manual preflight step; GitHub wraps it in a ZIP containing `sprig-wt-module.tar.gz`.
 - [ ] Back up current Schwung configuration, projects and Sprig WT presets before replacing the module.
-- [x] Register native MAIN, OSC 1, OSC 2 and FILTER canvas pages in the DSP chain ABI and root hierarchy.\n- [ ] Confirm those pages are reachable and render correctly on the physical Move. Source-level tests cannot prove hardware page navigation.
+- [x] Register native MAIN, OSC 1, OSC 2 and FILTER canvas pages in the DSP chain ABI and root hierarchy.
+- [ ] Confirm those pages are reachable and render correctly on the physical Move. Source-level tests cannot prove hardware page navigation.
 
 ## Audio and controls
 - [ ] Load a known existing preset (IDs 0–99); confirm it sounds and recalls the same settings.
