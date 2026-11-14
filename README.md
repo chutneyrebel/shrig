@@ -2,7 +2,7 @@
 
 **Experimental wavetable synthesizer for Ableton Move via Schwung.** Independently developed and inspired by exploratory wavetable instruments such as Shrub. Not a port of Shrub, and no proprietary Shrub wavetables or code are included.
 
-> **Development status (14 November 2026):** Work in progress on `feature/shrub-inspired-synth`. The latest dual-oscillator changes are **not hardware-verified**. Do not install a failing or unverified CI artifact. The stable v0.1.0 release remains untouched.
+> **Development status (14 November 2026):** Work in progress on `main`. The latest dual-oscillator changes are **not hardware-verified**. Do not install a failing or unverified CI artifact. The project is unreleased and development proceeds directly on `main`.
 
 ## Vision
 
@@ -64,6 +64,6 @@ Do not overwrite a known-good installation with an experimental build unless you
 
 ## Repository and licensing
 
-Current repository: [chutneyrebel/shrig](https://github.com/chutneyrebel/shrig). Development branch: `feature/shrub-inspired-synth`. Stable v0.1.0 must remain unchanged.
+Current repository: [chutneyrebel/shrig](https://github.com/chutneyrebel/shrig). Active development takes place directly on `main`. Experimental changes are not releases.
 
 MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton, the Schwung developers, Xfer Records or the creators of Shrub.
