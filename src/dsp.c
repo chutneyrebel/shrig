@@ -30,7 +30,8 @@ typedef struct plugin_api_v2 {
 
 typedef struct {
     float phase, phase2, increment, env, vel, release_step;
-    float ic1, ic2;
+    float ic1, ic2, filter_env, smooth_cut;
+    uint8_t filter_stage;
     unsigned age;
     uint8_t note, band, stage, down;
 } Voice;
@@ -38,6 +39,7 @@ typedef struct {
 typedef struct {
     int wave, position, cutoff, resonance, attack, decay, sustain, release, level;
     int osc2_level, detune, lfo_rate, lfo_depth, drive;
+    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter;
     float lfo_phase;
     float smooth_wave, smooth_position, smooth_g, smooth_res, smooth_level;
     unsigned age;
@@ -85,6 +87,7 @@ static void defaults(Synth *s){
     s->wave=1;s->position=50;s->cutoff=78;s->resonance=15;
     s->attack=10;s->decay=230;s->sustain=72;s->release=240;s->level=65;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->drive=0;
+    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;
     s->smooth_wave=1;s->smooth_position=1.5f;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;
@@ -115,6 +118,7 @@ static void note_on(Synth *s,unsigned note,unsigned vel){
     Voice *v=&s->voices[chosen];wipe(v,sizeof(*v));
     v->note=note;v->band=sprig_note_band[note];v->increment=sprig_note_phase_inc[note];
     v->vel=(float)vel/127.0f;v->stage=ATTACK;v->down=1;v->age=++s->age;
+    v->filter_stage=1;v->smooth_cut=(float)s->cutoff;
 }
 static void note_off(Synth *s,unsigned note){
     for(int i=0;i<SPRIG_VOICES;i++){
@@ -144,7 +148,8 @@ typedef struct { const char *name; int min,max; size_t offset; } Param;
 static const Param params[]={
     P(wave,3),P(position,100),P(cutoff,100),P(resonance,100),
     P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
-    P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(drive,100)
+    P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(drive,100),
+    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -255,8 +260,7 @@ static void render_block(void *instance,int16_t *out,int frames){
         float lfo=lookup(0,0,0,s->lfo_phase);
         float wave=clampf(s->smooth_wave,0,3);
         float pos=clampf(s->smooth_position + .015f*s->lfo_depth*lfo,0,3);
-        float g=s->smooth_g,k=2.f-1.9f*s->smooth_res;
-        float a1=1.f/(1.f+g*(g+k)),a2=g*a1,a3=g*a2;
+        float k=2.f-1.9f*s->smooth_res;
         float sum=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
@@ -272,6 +276,23 @@ static void render_block(void *instance,int16_t *out,int frames){
             if(v->phase>=256.f)v->phase-=256.f;
             /* Soft clipping before filter: independent nonlinear shaper. */
             if(s->drive>0){float d=.03f*(float)s->drive;float u=x*(1.f+d);x=u/(1.f+(u<0.f?-u:u)*d*.25f);}
+            /* Triggered filter envelope (attack then decay to zero). */
+            if(v->filter_stage==1){
+                float denom=(float)s->filter_env_attack*.001f*SR;
+                if(denom<1.f)denom=1.f;
+                v->filter_env+=1.f/denom;
+                if(v->filter_env>=1.f){v->filter_env=1.f;v->filter_stage=2;}
+            }else if(v->filter_stage==2){
+                float denom=(float)s->filter_env_decay*.001f*SR;
+                if(denom<1.f)denom=1.f;
+                v->filter_env-=1.f/denom;
+                if(v->filter_env<=0.f){v->filter_env=0.f;v->filter_stage=0;}
+            }
+            float cutoff_target=(float)s->cutoff + .45f*(float)s->filter_env_amt*v->filter_env + .35f*(float)s->lfo_filter*lfo;
+            v->smooth_cut+=.005f*(clampf(cutoff_target,0.f,100.f)-v->smooth_cut);
+            int ci=clampi((int)(v->smooth_cut+.5f),0,100);
+            float g=sprig_cutoff_g[ci];
+            float a1=1.f/(1.f+g*(g+k)),a2=g*a1,a3=g*a2;
             float v3=x-v->ic2;
             float v1=a1*v->ic1+a2*v3;
             float v2=v->ic2+a2*v->ic1+a3*v3;
