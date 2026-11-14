@@ -3,7 +3,7 @@
   "name": "Sprig WT",
   "abbrev": "SPRIG",
   "version": "0.2.0",
-  "description": "Move-native polyphonic wavetable synth with twin oscillators, scanning LFO, filter and drive; independent Shrub-inspired design.",
+  "description": "Move-native wavetable synth with two oscillators, morphing, filter envelopes, motion, drive and a graphical device face",
   "author": "Shrook / independent prototype",
   "api_version": 2,
   "dsp": "dsp.so",
@@ -159,6 +159,61 @@
         "step": 1,
         "default": 0,
         "display_format": "%.0f"
+      },
+      {
+        "key": "filter_env_amt",
+        "name": "Filter Env Amount",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "filter_env_attack",
+        "name": "Filter Env Attack",
+        "type": "float",
+        "min": 0,
+        "max": 2000,
+        "step": 1,
+        "default": 5,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "filter_env_decay",
+        "name": "Filter Env Decay",
+        "type": "float",
+        "min": 0,
+        "max": 2000,
+        "step": 1,
+        "default": 400,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "lfo_filter",
+        "name": "LFO Filter Depth",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "face",
+        "name": "Synth Face",
+        "type": "canvas",
+        "canvas_script": "canvas.js",
+        "as_page": true,
+        "page_first": true,
+        "show_value": false,
+        "extra_keys": [
+          "position",
+          "cutoff",
+          "lfo_depth",
+          "filter_env_amt"
+        ]
       }
     ],
     "ui_hierarchy": {
@@ -176,14 +231,7 @@
             "level"
           ],
           "params": [
-            "wave",
-            "position",
-            "osc2_level",
-            "detune",
-            "cutoff",
-            "resonance",
-            "lfo_depth",
-            "level",
+            "face",
             {
               "level": "osc",
               "label": "Oscillators"
@@ -195,6 +243,10 @@
             {
               "level": "motion",
               "label": "Motion"
+            },
+            {
+              "level": "filter_env",
+              "label": "Filter Envelope"
             },
             {
               "level": "amp",
@@ -226,12 +278,20 @@
           "knobs": [
             "cutoff",
             "resonance",
-            "drive"
+            "drive",
+            "filter_env_amt",
+            "filter_env_attack",
+            "filter_env_decay",
+            "lfo_filter"
           ],
           "params": [
             "cutoff",
             "resonance",
-            "drive"
+            "drive",
+            "filter_env_amt",
+            "filter_env_attack",
+            "filter_env_decay",
+            "lfo_filter"
           ]
         },
         "motion": {
@@ -239,11 +299,13 @@
           "knobs": [
             "lfo_rate",
             "lfo_depth",
+            "lfo_filter",
             "position"
           ],
           "params": [
             "lfo_rate",
             "lfo_depth",
+            "lfo_filter",
             "position"
           ]
         },
@@ -269,6 +331,21 @@
           ],
           "params": [
             "level"
+          ]
+        },
+        "filter_env": {
+          "label": "Filter Envelope",
+          "knobs": [
+            "filter_env_attack",
+            "filter_env_decay",
+            "filter_env_amt",
+            "lfo_filter"
+          ],
+          "params": [
+            "filter_env_attack",
+            "filter_env_decay",
+            "filter_env_amt",
+            "lfo_filter"
           ]
         }
       }
