@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate 96 original multi-frame, band-limited wavetable families.
+"""Generate 96 historical plus 8 curated, band-limited multi-frame wavetables.
 No third-party samples; run before compiling DSP.
 """
 from pathlib import Path
@@ -9,9 +9,9 @@ LIMITS=[96,64,48,32,24,16,8,4,1]
 DEST=Path(__file__).resolve().parents[1]/'src'/'expanded_tables.h'
 with DEST.open('w') as f:
     f.write('/* Generated original spectral families. Do not edit. */\n#ifndef SPRIG_EXPANDED_TABLES_H\n#define SPRIG_EXPANDED_TABLES_H\n')
-    f.write('#define SPRIG_EXPANDED_WAVES 96\n#define SPRIG_EXPANDED_FRAMES 4\n')
-    f.write('static const float sprig_expanded_tables[96][4][9][256]={\n')
-    for wave in range(96):
+    f.write('#define SPRIG_EXPANDED_WAVES 104\n#define SPRIG_EXPANDED_FRAMES 4\n')
+    f.write('static const float sprig_expanded_tables[104][4][9][256]={\n')
+    for wave in range(104):
         f.write('{\n')
         for frame in range(4):
             f.write('{\n')
@@ -102,6 +102,35 @@ with DEST.open('w') as f:
                             else: # alien / spectral rotation and phase scrambling
                                 weight=(.02+abs(math.sin(h*h*(.03+.015*variant)+u*4))**6)/h**.28
                                 phase+=h*h*(.1+.21*u)
+                        # Curated v0.2.2 tables use new IDs 100-107 (wave 96-103).
+                        # Historical tables 0-99 remain bit-for-bit unchanged.
+                        if wave>=96:
+                            core=wave-96
+                            t=frame/3
+                            if core==0: # Pure: fundamental -> octave -> fifth
+                                weight=(1-t)*(.98 if h==1 else .0)+t*(.75 if h==2 else .4 if h==3 else 0)
+                            elif core==1: # Analog: saw -> square -> narrow pulse
+                                weight=(1/h**(1.15-.65*t))*(1 if frame==0 else (1 if h%2 else .05) if frame==1 else (1 if h%3==1 else .03) if frame==2 else 1)
+                            elif core==2: # Hollow: odd -> fifth-heavy -> high airy
+                                weight=(1 if h%2 else .0)/h**(.9-.45*t)
+                                if frame>=2:weight*=.05 if h<5 else 1
+                            elif core==3: # Vocal: two formants move in opposing directions
+                                weight=.03/h+.95*math.exp(-((h-(3+10*t))/1.6)**2)+.8*math.exp(-((h-(19-10*t))/2.4)**2)
+                            elif core==4: # Glass: isolated, bell-like harmonic clusters
+                                weight=sum(math.exp(-((h-k)/.42)**2)*a for k,a in ((1,.25),(7+frame*3,1),(19+frame*4,.8),(37-frame*2,.5)))
+                                phase+=h*h*.17
+                            elif core==5: # Metal: hard spectral shifts, phase-distorted clusters
+                                weight=sum(math.exp(-((h-k)/.7)**2)*a for k,a in ((2,.2),(8+frame*5,1),(27-frame*4,.9),(43-frame*3,.7)))
+                                phase+=h*h*(.23+.12*t)
+                            elif core==6: # Organic: smoothly blooming high harmonics
+                                weight=(.7 if h==1 else .04/h)+(.12+.85*t)*math.exp(-((h-(4+14*t))/ (2+3*t))**2)
+                                phase+=.3*math.sin(h*.3+t*3)
+                            else: # Alien: radical alternating spectral geometry
+                                weight=(.9 if h==1 and frame==0 else .0)
+                                if frame==1:weight=(1 if h%7==1 else .005)/h**.25
+                                if frame==2:weight=(1 if h in (3,11,23,41) else .002)/h**.12
+                                if frame==3:weight=(1 if h%2==0 else .001)/h**.1
+                                phase+=h*h*(.13+.15*t)
                         v+=weight*math.sin(h*p+phase)
                     values.append(v)
                 # Preserve the 48 established expanded waves bit-for-bit.
