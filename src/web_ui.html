@@ -28,7 +28,7 @@ footer{color:var(--dim);font-size:11px;padding-top:13px;line-height:1.5}
 <script>
 'use strict';
 const groups={
- osc:[['wave','Wave',0,3,1],['wt_bank','WT Bank',0,1,1],['wt_table','WT Table',0,47,1],['spectral_shape','Spectral Shape',0,100,1],['position','Wavetable Position',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1]],
+ osc:[['wavetable','Wavetable',0,51,1],['position','WT Position',0,100,1],['shape','Shape',0,100,1],['osc2_level','Osc 2 Mix',0,100,1],['detune','Osc 2 Detune',0,100,1]],
  tone:[['cutoff','Cutoff',0,100,1],['resonance','Resonance',0,100,1],['drive','Drive',0,100,1],['filter_env_amt','Filter EG Amount',0,100,1],['filter_env_attack','Filter EG Attack',0,2000,1],['filter_env_decay','Filter EG Decay',0,2000,1],['level','Output',0,100,1]],
  motion:[['lfo_rate','Motion Rate',0,100,1],['lfo_depth','Motion Depth',0,100,1],['lfo_filter','Motion Filter',0,100,1]],
  amp:[['attack','Attack',0,2000,1],['decay','Decay',0,2000,1],['sustain','Sustain',0,100,1],['release','Release',0,2000,1]]
@@ -45,7 +45,7 @@ function control(key,name,min,max,step){
  if(key==='wave'||key==='wt_bank')(key==='wave'?waveNames:bankNames).forEach((w,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=w;input.append(opt)});
  else{input.type='range';input.min=min;input.max=max;input.step=step;}
  input.setAttribute('aria-label',name);
- const change=()=>{val.textContent=key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(['wave','position','wt_bank','wt_table','spectral_shape'].includes(key))drawWave()};
+ const change=()=>{val.textContent=key==='wave'?waveNames[+input.value]:key==='wt_bank'?bankNames[+input.value]:input.value;setParam(key,input.value);if(['wavetable','position','shape'].includes(key))drawWave()};
  input.addEventListener('input',change);input.addEventListener('change',change);
  root.append(input);fields[key]={input,val};return root;
 }
@@ -54,14 +54,14 @@ function update(key,v){const f=fields[key];if(!f)return;const n=Number(v);if(!Nu
 function drawWave(){
  const canvas=document.getElementById('scope'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);ctx.strokeStyle='#2b3844';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
- const wave=Number(fields.wave.input.value)||0,pos=(Number(fields.position.input.value)||0)/100;
+ const selected=Number(fields.wavetable.input.value)||0,wave=Math.min(3,selected),pos=(Number(fields.position.input.value)||0)/100,shape=(Number(fields.shape.input.value)||50)/100;
  ctx.strokeStyle='#72e5cc';ctx.lineWidth=2;ctx.beginPath();
  for(let x=0;x<w;x++){let p=x/w*2*Math.PI;let y=wave===0?Math.sin(p):wave===1?2*x/w-1:wave===2?(x/w<.5?1:-1):1-4*Math.abs(x/w-.5);
- y=(1-.20*pos)*y+.20*pos*Math.sin(3*p);
+ y=(1-.20*pos)*y+.20*pos*Math.sin(3*p);if(selected>=4)y=Math.sin(p*(1+selected%12))*.5+Math.sin(p)*.35;y*=.7+.6*shape;
  const py=h/2-y*h*.38;if(x===0)ctx.moveTo(x,py);else ctx.lineTo(x,py)}
  ctx.stroke();
 }
-update('wave',1);update('position',50);drawWave();
+update('wavetable',1);update('position',50);update('shape',50);drawWave();
 if(api&&typeof api.onParamChange==='function'){
  api.onParamChange(values=>{for(const [key,v] of Object.entries(values||{})){const base=key.startsWith(prefix+':')?key.slice(prefix.length+1):key;if(fields[base])update(base,v)}document.getElementById('status').textContent='CONNECTED'});
 }else document.getElementById('status').textContent='OFFLINE PREVIEW';
