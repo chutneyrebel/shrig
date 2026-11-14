@@ -68,9 +68,9 @@ assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wavetable','position'], 'Expanded oscillator controls must be visible on root Move knobs'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wavetable','position','shape']
-assert len(meta['capabilities']['chain_params'])==28
+assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
+assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wavetable','position','osc1_warp_type']
+assert len(meta['capabilities']['chain_params'])==40
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -164,3 +164,12 @@ print('PASS: ABI, v1.9 chain_params/canvas contract, render, MIDI, polyphony, wa
 print('Mono audio RMS:',round(rms(played),1))
 print('Polyphony audio RMS:',round(rms(poly),1))
 
+
+# Independent oscillator controls are exposed and bounded.
+for k,hi in [('osc1_warp_type',7),('osc2_warp_type',7),('osc2_wavetable',51),('osc1_pan',100),('osc2_pan',100),('osc1_volume',100),('osc2_volume',100)]:
+    setp(k,999)
+    assert getp(k)==str(hi),(k,getp(k))
+setp('osc1_warp_type',0);setp('osc1_warp',0);setp('osc1_volume',100)
+setp('osc2_wavetable',24);setp('osc2_position',60);setp('osc2_warp_type',3);setp('osc2_warp',65);setp('osc2_volume',50)
+assert getp('osc2_wavetable')=='24' and getp('osc2_warp_type')=='3'
+print('PASS: independent dual oscillator controls and warp ranges')
