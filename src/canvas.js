@@ -70,6 +70,7 @@
       const bank=bounded(value(v,"wt_bank",0),0,0,1)|0;
       const table=bounded(value(v,"wt_table",0),0,0,47)|0;
       const shape=bounded(value(v,"spectral_shape",50),50,0,100);
+      const legacyShape=bounded(value(v,"legacy_shape",50),50,0,100);
       const pos=bounded(value(v,"position",50),50,0,100)/100;
       const cut=bounded(value(v,"cutoff",78),78,0,100);
       const motion=bounded(value(v,"lfo_depth",0),0,0,100);
@@ -93,6 +94,9 @@
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
       trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape);
+      /* Bank-aware legends are rendered by our canvas; the host's own
+       * encoder labels remain static until Schwung adds layout refresh. */
+      ctx.print(2,1,bank?"TABLE "+table+"  SPECTRAL "+Math.round(shape):"WAVE "+["SIN","SAW","SQR","TRI"][wave]+"  SHAPE "+Math.round(legacyShape),1);
       /* A sparse second harmonic contour gives the technical trace an organic
        * shimmer. It exists only while voices sound and Motion is substantial.
        * The base waveform remains unchanged and idle stays perfectly still. */
