@@ -66,11 +66,12 @@
       const v=o && o.values || {};
       const W=ctx.width||128,H=ctx.height||40;
       if(W<32||H<18)return;
-      const wave=bounded(value(v,"wave",1),1,0,3)|0;
-      const bank=bounded(value(v,"wt_bank",0),0,0,1)|0;
-      const table=bounded(value(v,"wt_table",0),0,0,47)|0;
-      const shape=bounded(value(v,"spectral_shape",50),50,0,100);
-      const legacyShape=bounded(value(v,"legacy_shape",50),50,0,100);
+      const selected=bounded(value(v,"wavetable",1),1,0,51)|0;
+      const wave=Math.min(3,selected);
+      const bank=selected>=4?1:0;
+      const table=Math.max(0,selected-4);
+      const shape=bounded(value(v,"shape",50),50,0,100);
+      const legacyShape=shape;
       const pos=bounded(value(v,"position",50),50,0,100)/100;
       const cut=bounded(value(v,"cutoff",78),78,0,100);
       const motion=bounded(value(v,"lfo_depth",0),0,0,100);
