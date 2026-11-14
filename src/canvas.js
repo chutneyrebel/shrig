@@ -59,7 +59,31 @@
     const dark=.5*(Math.sin(phase*6.28318530718)+Math.sin(phase*6.28318530718+.15));
     return Math.max(-1,Math.min(1,sh<0?base*(1+sh*.7)+dark*(-sh*.7):base*(1+sh*.35)));
   }
+  function coreWave(phase,id,pos){
+    const frame=Math.min(3,Math.floor(pos*3)),next=Math.min(3,frame+1);
+    const u=pos*3-frame,m=u*u*(3-2*u);
+    function sample(f){
+      const t=f/3,core=id-100,p=phase*6.28318530718;
+      let v=0;
+      for(let h=1;h<=24;h++){
+        const bell=(c,w)=>Math.exp(-Math.pow((h-c)/w,2));
+        let a=0,shift=0;
+        if(core===0)a=(1-t)*(h===1?.98:0)+t*(h===2?.75:h===3?.4:0);
+        else if(core===1)a=Math.pow(h,-(1.15-.65*t))*(f===0?1:f===1?(h%2?1:.05):f===2?(h%3===1?1:.03):1);
+        else if(core===2){a=(h%2?1:0)/Math.pow(h,.9-.45*t);if(f>=2&&h<5)a*=.05;}
+        else if(core===3)a=.03/h+.95*bell(3+10*t,1.6)+.8*bell(19-10*t,2.4);
+        else if(core===4){a=.25*bell(1,.42)+bell(7+f*3,.42)+.8*bell(19+f*4,.42)+.5*bell(37-f*2,.42);shift=h*h*.17;}
+        else if(core===5){a=.2*bell(2,1.2)+bell(8+f*5,1.2)+.9*bell(27-f*4,1.2)+.7*bell(43-f*3,1.2);shift=h*h*(.23+.12*t);}
+        else if(core===6){a=(h===1?.7:.04/h)+(.12+.85*t)*bell(4+14*t,2+3*t);shift=.3*Math.sin(h*.3+t*3);}
+        else {a=f===0?(h===1?.9:0):f===1?(h%7===1?1:.005)/Math.pow(h,.25):f===2?([3,11,23,41].includes(h)?1:.002)/Math.pow(h,.12):(h%2===0?1:.001)/Math.pow(h,.1);shift=h*h*(.13+.15*t);}
+        v+=a*Math.sin(h*p+shift+.13*f*h);
+      }
+      return v;
+    }
+    return Math.max(-1,Math.min(1,((1-m)*sample(frame)+m*sample(next))*.45));
+  }
   function displayedWave(phase,wave,pos,bank,table,shape,legacyShape=50){
+    if(table>=96&&table<=103&&bank)return coreWave(phase,table+4,pos);
     const legacy=waveform(phase,wave,pos)+Math.sin(phase*6.28318530718)*((legacyShape-50)/50)*.32;
     return bank?expandedWave(phase,table,pos,shape):legacy;
   }
@@ -104,7 +128,7 @@
     const v=o&&o.values||{},W=ctx.width||128,H=ctx.height||40;
     if(W<32||H<18)return;
     const second=which==='osc2';
-    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,99)|0;
+    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,107)|0;
     const pos=bounded(value(v,second?'osc2_position':'position',50),50,0,100)/100;
     const shape=bounded(value(v,'shape',50),50,0,100);
     const wave=Math.min(3,selected),bank=selected>=4?1:0,table=Math.max(0,selected-4);
