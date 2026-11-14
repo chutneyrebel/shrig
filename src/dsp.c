@@ -290,6 +290,8 @@ static float warp_phase(float p,int mode,float amount){
 static float table_at(int table,float position,int band,float phase){
     int t=clampi(table,0,107);float pos=clampf(position,0.f,3.f);
     int p0=(int)pos,p1=p0<3?p0+1:3;float pt=pos-p0;
+    /* Smoothstep only for new core tables, preserving historical preset response. */
+    if(t>=100)pt=pt*pt*(3.f-2.f*pt);
     float a=t<4?lookup(t,p0,band,phase):expanded_lookup(t-4,p0,band,phase);
     float b=t<4?lookup(t,p1,band,phase):expanded_lookup(t-4,p1,band,phase);
     return a+(b-a)*pt;
