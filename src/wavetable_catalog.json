@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "description": "Discovery labels for the 96 expanded procedurally generated wavetables. Original waveform IDs and DSP are unchanged.",
+  "classic": {
+    "ids": [
+      0,
+      3
+    ],
+    "name": "Classic"
+  },
+  "categories": {
+    "organic": [
+      {
+        "ids": [
+          4,
+          7
+        ],
+        "name": "Harmonic Bloom"
+      },
+      {
+        "ids": [
+          20,
+          23
+        ],
+        "name": "Spectral Ripple"
+      },
+      {
+        "ids": [
+          24,
+          27
+        ],
+        "name": "Moving Formant"
+      },
+      {
+        "ids": [
+          52,
+          55
+        ],
+        "name": "Breathing Formant"
+      },
+      {
+        "ids": [
+          56,
+          59
+        ],
+        "name": "Dual Resonance"
+      },
+      {
+        "ids": [
+          80,
+          83
+        ],
+        "name": "Moving Spectral Peak"
+      },
+      {
+        "ids": [
+          88,
+          91
+        ],
+        "name": "Shimmer Ripple"
+      }
+    ],
+    "industrial": [
+      {
+        "ids": [
+          32,
+          35
+        ],
+        "name": "Spectral Comb"
+      },
+      {
+        "ids": [
+          36,
+          39
+        ],
+        "name": "Harmonic Constellation"
+      },
+      {
+        "ids": [
+          44,
+          47
+        ],
+        "name": "Harmonic Gaps"
+      },
+      {
+        "ids": [
+          48,
+          51
+        ],
+        "name": "High Partial Clusters"
+      },
+      {
+        "ids": [
+          64,
+          67
+        ],
+        "name": "Chaotic Partial Ripple"
+      },
+      {
+        "ids": [
+          68,
+          71
+        ],
+        "name": "Periodic Harmonic Gate"
+      },
+      {
+        "ids": [
+          72,
+          75
+        ],
+        "name": "Sharp Spectral Comb"
+      },
+      {
+        "ids": [
+          92,
+          95
+        ],
+        "name": "Dense Harmonic Ripple"
+      },
+      {
+        "ids": [
+          96,
+          99
+        ],
+        "name": "Shifting Partial Cluster"
+      }
+    ],
+    "vocal": [
+      {
+        "ids": [
+          8,
+          11
+        ],
+        "name": "Odd Harmonics"
+      },
+      {
+        "ids": [
+          12,
+          15
+        ],
+        "name": "Every Third"
+      },
+      {
+        "ids": [
+          16,
+          19
+        ],
+        "name": "Every Fourth"
+      },
+      {
+        "ids": [
+          28,
+          31
+        ],
+        "name": "Sparse Formant Partials"
+      },
+      {
+        "ids": [
+          40,
+          43
+        ],
+        "name": "Even Ripple"
+      },
+      {
+        "ids": [
+          60,
+          63
+        ],
+        "name": "Spectral Notch"
+      },
+      {
+        "ids": [
+          76,
+          79
+        ],
+        "name": "Vowel-Like Partial Cluster"
+      },
+      {
+        "ids": [
+          84,
+          87
+        ],
+        "name": "Moving Spectral Gaps"
+      }
+    ]
+  }
+}
