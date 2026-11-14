@@ -43,9 +43,9 @@ typedef struct {
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
-    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter;
+    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan;
     float lfo_phase;
-    float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level;
+    float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
     unsigned age;
     Voice voices[SPRIG_VOICES];
 } Synth;
@@ -93,10 +93,10 @@ static void defaults(Synth *s){
     s->osc1_warp_type=0;s->osc1_warp=0;s->osc1_detune=50;s->osc1_octave=2;s->osc1_pan=50;s->osc1_volume=100;
     s->osc2_wavetable=1;s->osc2_position=50;s->osc2_warp_type=0;s->osc2_warp=0;s->osc2_detune=50;s->osc2_octave=2;s->osc2_pan=50;s->osc2_volume=0;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->lfo_wt_depth=0;s->drive=0;
-    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;
+    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;
     s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=1;s->smooth_shape=50;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
-    s->smooth_res=0.15f;s->smooth_level=.65f;
+    s->smooth_res=0.15f;s->smooth_level=.65f;s->smooth_master_pan=50.f;
 }
 static void *create_instance(const char *module_dir,const char *json_defaults){
     (void)module_dir;(void)json_defaults;
@@ -157,7 +157,7 @@ static const Param params[]={
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
-    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100)
+    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -181,7 +181,7 @@ static void set_param(void *instance,const char *key,const char *value){
     Synth *s=instance;
     if(eq(key,"state")){
         char k[32],v[24];int ix=0;
-        while(value[ix] && ix<512){
+        while(value[ix] && ix<2048){
             int ki=0,vi=0;
             while(value[ix] && value[ix]!='=' && value[ix]!=',' && ki<30)k[ki++]=value[ix++];
             k[ki]=0;
@@ -211,6 +211,28 @@ static int get_param(void *instance,const char *key,char *buf,int len){
         int active=0;
         for(int i=0;i<SPRIG_VOICES;i++)if(s->voices[i].stage)active++;
         buf[0]=0;return append_int(buf,len,0,active);
+    }
+    if(eq(key,"face_snapshot")){
+        /* One bounded derived read per canvas. Never persisted as a preset. */
+        const int data[]={
+            s->wavetable,s->position,s->osc1_warp_type,s->osc1_warp,
+            s->osc1_detune,s->osc1_pan,s->osc1_volume,
+            s->osc2_wavetable,s->osc2_position,s->osc2_warp_type,
+            s->osc2_warp,s->osc2_detune,s->osc2_pan,s->osc2_volume,
+            s->shape,s->lfo_rate,s->lfo_depth,s->lfo_wt_depth,
+            s->cutoff,s->resonance,s->drive,s->filter_env_amt,
+            s->lfo_filter,s->master_pan
+        };
+        int at=0,active=0;
+        for(int i=0;i<SPRIG_VOICES;i++)if(s->voices[i].stage)active++;
+        buf[0]=0;
+        for(unsigned i=0;i<sizeof(data)/sizeof(data[0]);i++){
+            if(i)at=append(buf,len,at,",");
+            at=append_int(buf,len,at,data[i]);
+            if(at<0)return -1;
+        }
+        at=append(buf,len,at,",");
+        return append_int(buf,len,at,active);
     }
     if(eq(key,"state")){
         int at=0;buf[0]=0;
@@ -307,6 +329,7 @@ static void render_block(void *instance,int16_t *out,int frames){
         s->smooth_g+=.004f*(sprig_cutoff_g[s->cutoff]-s->smooth_g);
         s->smooth_res+=.004f*(.01f*(float)s->resonance-s->smooth_res);
         s->smooth_level+=.004f*(.01f*(float)s->level-s->smooth_level);
+        s->smooth_master_pan+=.004f*((float)s->master_pan-s->smooth_master_pan);
         /* One global low-frequency modulator for subtle continuous wavetable motion. */
         float lfo_hz=.06f+.12f*(float)s->lfo_rate;
         s->lfo_phase+=lfo_hz*(256.f/SR);
@@ -377,8 +400,11 @@ static void render_block(void *instance,int16_t *out,int frames){
             sumR+=v2r*env*v->vel;
         }
         /* Conservative poly mix to prevent clipping with eight voices. */
-        out[2*j]=pcm(sumL*.48f*s->smooth_level);
-        out[2*j+1]=pcm(sumR*.48f*s->smooth_level);
+        float pan=clampf(s->smooth_master_pan,0.f,100.f);
+        float balanceL=pan<=50.f?1.f:(100.f-pan)*.02f;
+        float balanceR=pan>=50.f?1.f:pan*.02f;
+        out[2*j]=pcm(sumL*balanceL*.48f*s->smooth_level);
+        out[2*j+1]=pcm(sumR*balanceR*.48f*s->smooth_level);
     }
 }
 static plugin_api_v2_t api={2,create_instance,destroy_instance,on_midi,set_param,get_param,get_error,render_block};
