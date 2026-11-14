@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include "tables.h"
 #include "wavetable_engine.h"
+#include "expanded_tables.h"
 
 #define SPRIG_VOICES 8
 #define SPRIG_INSTANCES 8
@@ -38,7 +39,7 @@ typedef struct {
 } Voice;
 
 typedef struct {
-    int wave, position, cutoff, resonance, attack, decay, sustain, release, level;
+    int wave, wt_bank, wt_table, position, cutoff, resonance, attack, decay, sustain, release, level;
     int osc2_level, detune, lfo_rate, lfo_depth, drive;
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter;
     float lfo_phase;
@@ -147,7 +148,7 @@ static void on_midi(void *instance,const uint8_t *msg,int len,int source){
 typedef struct { const char *name; int min,max; size_t offset; } Param;
 #define P(key,hi) {#key,0,hi,offsetof(Synth,key)}
 static const Param params[]={
-    P(wave,3),P(position,100),P(cutoff,100),P(resonance,100),
+    P(wave,3),P(wt_bank,1),P(wt_table,31),P(position,100),P(cutoff,100),P(resonance,100),
     P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(drive,100),
     P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100)
@@ -243,6 +244,12 @@ static float lookup(int wave,int frame,int band,float phase){
     /* Legacy bank remains sample-for-sample identical to v0.2. */
     return sprig_table_lookup_legacy(wave,frame,band,phase);
 }
+static float expanded_lookup(int table,int frame,int band,float phase){
+    int i=(int)phase & TABLE_MASK;
+    float t=phase-(float)((int)phase);
+    const float *row=sprig_expanded_tables[table][frame][band];
+    return row[i]+(row[(i+1)&TABLE_MASK]-row[i])*t;
+}
 static float sample_wave(Voice *v,float wave,float pos){
     int w0=(int)wave; int w1=w0<3?w0+1:3;
     int p0=(int)pos; int p1=p0<3?p0+1:3;
@@ -280,7 +287,14 @@ static void render_block(void *instance,int16_t *out,int frames){
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
             float env=env_next(s,v);if(!v->stage)continue;
-            float x=sample_wave(v,wave,pos);
+            float x;
+            if(s->wt_bank==1){
+                int p0=(int)pos,p1=p0<3?p0+1:3;
+                float blend=pos-(float)p0;
+                float a=expanded_lookup(s->wt_table,p0,v->band,v->phase);
+                float b=expanded_lookup(s->wt_table,p1,v->band,v->phase);
+                x=a+(b-a)*blend;
+            }else x=sample_wave(v,wave,pos);
             if(s->osc2_level>0){
                 /* Optional second free-running saw voice, tuned +/-50 cents. */
                 x+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);
