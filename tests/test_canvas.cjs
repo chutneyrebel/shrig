@@ -71,3 +71,14 @@ assert.notEqual(JSON.stringify(shimmerPixels(1,80,1000)),JSON.stringify(shimmerP
 console.log('PASS: sparse harmonic shimmer is note-gated and modulation-reactive');
 console.log('PASS: no duplicate encoder feedback inside canvas');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
+
+
+// Expanded bank and table must visibly change the native waveform, including idle.
+function bankLines(bank,table){
+ const lines=[];
+ overlay.drawPage({...ctx,line(...args){lines.push(args);}}, {nowMs:1000,values:{wave:1,wt_bank:bank,wt_table:table,position:50,voice_activity:0}});
+ return JSON.stringify(lines);
+}
+assert.notEqual(bankLines(0,0),bankLines(1,0),'Expanded bank must change the canvas');
+assert.notEqual(bankLines(1,0),bankLines(1,24),'Expanded table must change the canvas');
+console.log('PASS: Synth Face displays bank-aware and table-aware waveforms');
