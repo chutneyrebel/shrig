@@ -45,4 +45,15 @@ let withoutClockB=withoutClockA;
 for(let i=0;i<20;i++) withoutClockB=waveformLines(80,undefined);
 assert.notEqual(withoutClockA,withoutClockB);
 console.log('PASS: missing nowMs uses redraw-frame fallback');
+// Every one of the eight encoders must identify itself in the canvas body.
+const keys=['wave','position','osc2_level','detune','cutoff','resonance','lfo_depth','level'];
+const vals={wave:2,position:63,osc2_level:41,detune:72,cutoff:30,resonance:25,lfo_depth:80,level:66};
+const labels=['WT TYPE','WT POS','OSC2 MIX','DETUNE','CUTOFF','RESO','MOTION','LEVEL'];
+for(let i=0;i<keys.length;i++){
+  const printed=[];
+  overlay.drawPage({...ctx,print(x,y,t,c){printed.push(t);}}, {keys,touched:i,values:vals,nowMs:1000});
+  assert(printed.includes(labels[i]),'missing contextual label for '+keys[i]);
+  assert(printed.includes(i===0?'SQUARE':String(vals[keys[i]])),'missing contextual value for '+keys[i]);
+}
+console.log('PASS: all eight encoders have contextual on-canvas label and value');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
