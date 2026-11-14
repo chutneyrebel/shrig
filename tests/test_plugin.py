@@ -147,7 +147,7 @@ assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Sc
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_octave']
+assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
 assert len(meta['capabilities']['chain_params'])==48
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
@@ -256,6 +256,8 @@ def curated_stress(first,second,position):
     put('position',position);put('osc2_position',100-position)
     put('osc1_volume',100);put('osc2_volume',100)
     put('lfo_wt_depth',100);put('lfo_rate',70)
+    buffer=(C.c_int16*256)()
+    for _ in range(40):api.render(probe,buffer,128) # allow smoothed pan to settle before note-on
     note=(C.c_uint8*3)(0x90,60,110)
     api.midi(probe,note,3,0)
     buffer=(C.c_int16*256)()
