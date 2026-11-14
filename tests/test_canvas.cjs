@@ -54,5 +54,20 @@ for(let i=0;i<keys.length;i++){
   overlay.drawPage({...ctx,print(x,y,t,c){printed.push(t);}}, {keys,touched:i,values:vals,nowMs:1000});
   assert.deepEqual(printed,['C','M','E','O'],'canvas must not repeat host parameter header');
 }
+// Stage 2C: harmonic shimmer is absent while idle and at zero motion,
+// but appears as sparse pixels when a voice sounds with sufficient motion.
+function shimmerPixels(voices,depth,nowMs=1200){
+  const pixels=[];
+  overlay.drawPage({...ctx,fillRect(x,y,w,h,color){
+    if(w===1 && h===1) pixels.push([x,y]);
+  }},{nowMs,values:{wave:1,position:55,lfo_depth:depth,lfo_rate:30,voice_activity:voices}});
+  return pixels;
+}
+assert.equal(shimmerPixels(0,80).length,0);
+assert.equal(shimmerPixels(1,0).length,0);
+assert.equal(shimmerPixels(1,14).length,0);
+assert(shimmerPixels(1,80).length>15);
+assert.notEqual(JSON.stringify(shimmerPixels(1,80,1000)),JSON.stringify(shimmerPixels(1,80,1800)));
+console.log('PASS: sparse harmonic shimmer is note-gated and modulation-reactive');
 console.log('PASS: no duplicate encoder feedback inside canvas');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
