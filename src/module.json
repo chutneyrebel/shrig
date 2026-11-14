@@ -25,6 +25,7 @@
           "Square",
           "Triangle"
         ],
+        "peek": false,
         "default": 1
       },
       {
