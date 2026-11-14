@@ -60,7 +60,52 @@
       lastX=x+i;lastY=py;
     }
   }
+  /* Four distinct page renderers. The host must register separate canvas
+   * page entries for these to become physical jog-wheel stops. */
+  function pageMeters(ctx,meters,H,W){
+    const y=H-9,cell=Math.floor(W/meters.length);
+    meters.forEach((m,i)=>{
+      const x=i*cell,barW=Math.max(3,cell-11);
+      ctx.print(x+1,y,m[0],1);
+      ctx.fillRect(x+8,y+2,barW,3,0);
+      ctx.fillRect(x+8,y+2,Math.round(barW*bounded(m[1],0,0,100)/100),3,1);
+    });
+  }
+  function renderFace(ctx,o,which){
+    const v=o&&o.values||{},W=ctx.width||128,H=ctx.height||40;
+    if(W<32||H<18)return;
+    const second=which==='osc2';
+    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,51)|0;
+    const pos=bounded(value(v,second?'osc2_position':'position',50),50,0,100)/100;
+    const shape=bounded(value(v,'shape',50),50,0,100);
+    const wave=Math.min(3,selected),bank=selected>=4?1:0,table=Math.max(0,selected-4);
+    const voices=bounded(value(v,'voice_activity',0),0,0,8);
+    const motion=bounded(value(v,'lfo_depth',0),0,0,100);
+    const rate=bounded(value(v,'lfo_rate',22),22,0,100);
+    const seconds=Number.isFinite(o&&o.nowMs)?o.nowMs/1000:frame/30;
+    const drift=voices>0?motion*.0012*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
+    if(which==='filter'){
+      const cutoff=bounded(value(v,'cutoff',78),78,0,100);
+      const res=bounded(value(v,'resonance',15),15,0,100);
+      const y0=2,h=Math.max(8,H-16);
+      let lastY=0;
+      for(let x=0;x<W-2;x++){
+        const t=x/(W-2),center=.1+.8*cutoff/100;
+        const slope=1/(1+Math.pow(Math.max(.001,t)/Math.max(.001,center),4));
+        const peak=(res/100)*.4*Math.exp(-Math.pow((t-center)/.09,2));
+        const y=y0+Math.round(h*(1-Math.min(1,slope+peak)));
+        if(x)ctx.line(x,y0+lastY,x+1,y,1);
+        lastY=y-y0;
+      }
+      pageMeters(ctx,[['C',cutoff],['R',res],['E',value(v,'filter_env_amt',0)],['L',value(v,'lfo_filter',0)]],H,W);
+    }else{
+      trace(ctx,1,2,W-3,Math.max(7,H-15),wave,Math.max(0,Math.min(1,pos+drift)),drift,bank,table,shape,shape);
+      if(which==='main')pageMeters(ctx,[['C',value(v,'cutoff',78)],['M',motion],['E',value(v,'filter_env_amt',0)],['O',value(v,'osc2_volume',0)]],H,W);
+      else pageMeters(ctx,[['W',value(v,second?'osc2_warp': 'osc1_warp',0)],['P',value(v,second?'osc2_pan':'osc1_pan',50)],['V',value(v,second?'osc2_volume':'osc1_volume',100)],['M',motion]],H,W);
+    }
+  }
   let frame = 0;
+  globalThis.sprig_faces = {main:(ctx,o)=>renderFace(ctx,o,'main'),osc1:(ctx,o)=>renderFace(ctx,o,'osc1'),osc2:(ctx,o)=>renderFace(ctx,o,'osc2'),filter:(ctx,o)=>renderFace(ctx,o,'filter')};
   globalThis.canvas_overlay = {
     drawPage(ctx, o) {
       const v=o && o.values || {};
