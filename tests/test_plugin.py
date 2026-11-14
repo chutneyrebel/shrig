@@ -476,3 +476,32 @@ for pan,quiet_side in ((0,1),(100,0)):
     assert energy[1-quiet_side]>0 and energy[quiet_side]==0,(pan,energy)
     api.destroy(probe)
 print('PASS: master pan controls both stereo output extremes')
+
+# Phase 2: opt-in envelopes and oscillator mix preserve legacy parameter defaults.
+phase2_keys=['osc1_env_enabled','osc2_env_enabled','osc1_attack','osc1_decay','osc1_sustain','osc1_release','osc2_attack','osc2_decay','osc2_sustain','osc2_release','mix_enabled','mix_balance']
+p2=api.create(b'.',None)
+assert p2
+def p2get(key):
+    buf=C.create_string_buffer(256)
+    assert api.get(p2,key.encode(),buf,len(buf))>=0,key
+    return int(buf.value)
+def p2set(key,value):
+    api.set(p2,key.encode(),str(value).encode())
+assert p2get('osc1_env_enabled')==0 and p2get('osc2_env_enabled')==0
+assert p2get('mix_enabled')==0 and p2get('mix_balance')==50
+for key in phase2_keys:
+    assert key in [p['key'] for p in chain_params],key
+for key in ['osc1_attack','osc2_attack','osc1_release','osc2_release']:
+    p2set(key,9999)
+    assert p2get(key)==2000
+p2set('osc1_env_enabled',1)
+p2set('osc2_env_enabled',1)
+p2set('osc1_attack',800)
+p2set('osc2_attack',1)
+p2set('mix_enabled',1)
+p2set('mix_balance',25)
+state=C.create_string_buffer(4096)
+assert api.get(p2,b'state',state,len(state))>0
+assert b'osc1_attack=800' in state.value and b'mix_balance=25' in state.value
+api.destroy(p2)
+print('PASS: Phase 2 opt-in envelope/mix metadata, defaults, bounds and state roundtrip')
