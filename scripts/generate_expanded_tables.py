@@ -125,7 +125,7 @@ with DEST.open('w') as f:
                                 weight=sum(math.exp(-((h-k)/1.2)**2)*a for k,a in ((2,.65),(8+frame*5,1),(27-frame*4,.9),(43-frame*3,.7)))
                                 phase+=h*h*(.23+.12*t)
                             elif core==6: # Organic: smoothly blooming high harmonics
-                                weight=(.7 if h==1 else .04/h)+(.12+.85*t)*math.exp(-((h-(4+14*t))/ (2+3*t))**2)
+                                weight=(.9-.65*t if h==1 else .025/h)+(.08+1.35*t)*math.exp(-((h-(3+18*t))/(1.3+3.2*t))**2)
                                 phase+=.3*math.sin(h*.3+t*3)
                             else: # Alien: radical alternating spectral geometry
                                 weight=(.9 if h==1 and frame==0 else .0)
