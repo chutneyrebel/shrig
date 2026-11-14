@@ -92,3 +92,8 @@ New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, 
 ### Categorized wavetable library
 
 `src/wavetable_catalog.json` maps the 96 expanded waveforms into Organic & Evolving (28), Industrial & Metallic (36), and Vocal & Spectral (32), with the four classic waveforms separate. The catalog is bundled with the module and checked for complete non-overlapping ID coverage in host tests. These are **discovery categories only**: there is not yet a native Move category picker, and this change does not add new waveforms or alter preset IDs. Native four-page Synth Face registration remains incomplete; hold hardware testing until the combined release is ready.
+
+
+### Categorized wavetable browsing (v0.2.1)
+
+The Schwung remote HTML interface now provides **independent category pickers for OSC 1 and OSC 2**, alongside each oscillator's continuous wavetable ID slider. Categories are **Classic (0–3)**, **Original Spectral (4–51)**, **Organic / Atmospheric (52–67)**, **Industrial / Metallic (68–83)** and **Vocal / Formant (84–99)**. Choosing a category selects its first waveform; the slider then explores individual waveforms. The category picker follows parameter changes. IDs remain stable for presets. These are sound-design groupings of generated spectral recipes, not imported recordings. Physical Move category browsing and four native canvas page registration remain to be implemented and verified; do not mistake remote HTML grouping for native hardware navigation.
