@@ -82,3 +82,8 @@ The host audio suite now checks Off plus all seven active warp modes separately 
 ### Wavetable expansion in development (v0.2.1)
 
 The unified oscillator selector now targets **100 waveforms per oscillator**: IDs 0–3 retain the original classic tables, IDs 4–51 retain the existing 48 generated spectral tables, and IDs 52–99 add 48 new spectral tables in 12 families (formant peaks, dual peaks, spectral notches, sparse clusters, nonlinear ripples, periodic partial selection, resonant combs and moving clusters). Every expanded table has four morph frames and nine pitch-dependent band-limited versions, generated before compilation with no runtime sample loading. Existing IDs remain stable. This is still a **procedurally generated wavetable library**, not user WAV import, and the native four-page registration is still pending. Test the expanded library, warp engine and four-page hardware navigation together only after the full v0.2.1 release is marked ready.
+
+
+### Wavetable quality guard (v0.2.1)
+
+New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, while original IDs 0–51 retain their established generation. The host test scans all 48 × 4 × 9 newly generated waveform rows for 256 samples, near-zero mean and conservative headroom. This does not yet implement 16/32-frame wavetables, phase-aligned spectral interpolation, or user WAV imports. Those need explicit memory/CPU and compatibility evaluation before changing the real-time DSP.
