@@ -67,3 +67,8 @@ Do not overwrite a known-good installation with an experimental build unless you
 Current repository: [chutneyrebel/shrig](https://github.com/chutneyrebel/shrig). Active development takes place directly on `main`. Experimental changes are not releases.
 
 MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton, the Schwung developers, Xfer Records or the creators of Shrub.
+
+
+### v0.2.1 warp regression coverage
+
+The host audio suite now checks Off plus all seven active warp modes separately on OSC 1 and OSC 2. For each active mode it compares a fresh-instance reference against zero amount (must be sample-identical) and strong warp (must audibly alter the PCM signal). This is automated audio verification, not yet confirmation of on-device control feel or perceived musical quality.
