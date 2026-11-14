@@ -11,6 +11,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+subprocess.run(['python3', str(ROOT/'scripts/generate_metadata.py'), '--check'],check=True)
 assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Sprig WT metadata exceeds 8 KB'
 BUILD = ROOT / 'build'
 BUILD.mkdir(exist_ok=True)
@@ -145,23 +146,25 @@ assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Schwung 8 KB metadata limit'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
-assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('osc1_detune','osc2_detune','osc2_volume')), 'Native face missing audition controls'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==46
+assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
+assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
+assert len(meta['capabilities']['chain_params'])==48
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
-# Native pages must be registered in BOTH the chain ABI and the root hierarchy.
-# Schwung's page planner only recognizes as_page canvas parameters declared in chain_params.
-expected_faces=[('face',None),('face_osc1','sprig_osc1'),('face_osc2','sprig_osc2'),('face_filter','sprig_filter')]
-root_pages=meta['capabilities']['ui_hierarchy']['levels']['root']['params'][:4]
-assert [p['key'] if isinstance(p,dict) else p for p in root_pages]==[key for key,_ in expected_faces], 'Native page order or root registration drift'
-for key,overlay in expected_faces:
+# Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
+expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
+for key,overlay,home in expected_faces:
     entry=next(p for p in meta['capabilities']['chain_params'] if p['key']==key)
-    assert entry['type']=='canvas' and entry.get('as_page') is True, (key,'not a Schwung native page')
-    assert entry['canvas_script']=='canvas.js', (key,'canvas script missing')
-    if overlay:
-        assert entry.get('canvas_overlay')==overlay, (key,'wrong overlay')
+    assert entry['type']=='canvas' and entry.get('as_page') is True
+    assert entry['canvas_script']=='canvas.js' and entry.get('canvas_overlay')==overlay
+    assert entry.get('page_first') is True
+    assert len(entry.get('extra_keys',[]))<=4
+    slots=meta['capabilities']['ui_hierarchy']['levels'][home]['params']
+    assert key in [x if isinstance(x,str) else x.get('key') for x in slots]
+    assert len(meta['capabilities']['ui_hierarchy']['levels'][home]['knobs'])<=8
+for key in ('face_osc1','face_osc2','face_filter'):
+    assert key not in meta['capabilities']['ui_hierarchy']['levels']['root']['params']
 assert len(set(p['key'] for p in meta['capabilities']['chain_params']))==len(meta['capabilities']['chain_params']), 'Duplicate chain parameter keys'
-print('PASS: four distinct native canvas pages registered in Schwung root and chain ABI')
+print('PASS: four native canvas pages each have a dedicated Schwung encoder level')
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
@@ -180,7 +183,8 @@ print('PASS: native and remote UI expose eight named warp modes')
 face=next((p for p in chain_params if p.get('key')=='face'), None)
 assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
 assert face['canvas_script']=='canvas.js'
-assert 'voice_activity' in face['extra_keys']
+assert face['extra_keys']==['face_snapshot']
+assert len(getp('face_snapshot').split(','))==25
 assert getp('voice_activity')=='0'
 hierarchy=json.loads(getp('ui_hierarchy'))
 assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP legacy hierarchy differs from shipped metadata'
@@ -252,6 +256,8 @@ def curated_stress(first,second,position):
     put('position',position);put('osc2_position',100-position)
     put('osc1_volume',100);put('osc2_volume',100)
     put('lfo_wt_depth',100);put('lfo_rate',70)
+    buffer=(C.c_int16*256)()
+    for _ in range(40):api.render(probe,buffer,128) # allow smoothed pan to settle before note-on
     note=(C.c_uint8*3)(0x90,60,110)
     api.midi(probe,note,3,0)
     buffer=(C.c_int16*256)()
@@ -319,6 +325,21 @@ assert getp('voice_activity')=='8'
 for n in range(48,72):midi(0x80,n,0)
 render(200)
 assert getp('voice_activity')=='0'
+# Phase 1: one read-only snapshot provides twenty-five live face values.
+face_data=getp('face_snapshot').split(',')
+assert len(face_data)==25 and all(item.isdigit() for item in face_data)
+assert int(face_data[0])==int(getp('wavetable'))
+assert int(face_data[7])==int(getp('osc2_wavetable'))
+assert not any(token.startswith('face_snapshot=') for token in getp('state').split(','))
+# The restored state parser must reach the last historical parameters.
+setp('filter_env_decay',613);setp('lfo_filter',47);setp('master_pan',75)
+full_state=getp('state')
+setp('filter_env_decay',2);setp('lfo_filter',1);setp('master_pan',0)
+setp('state',full_state)
+assert getp('filter_env_decay')=='613' and getp('lfo_filter')=='47' and getp('master_pan')=='75'
+setp('filter_env_decay',400);setp('lfo_filter',0);setp('master_pan',50)
+print('PASS: derived face snapshot, complete legacy state restore, new master pan')
+
 # Stereo pan and OSC 2 motion regression checks.
 def stereo_with(pan1,pan2,depth=0):
     midi(0xB0,123,0);render(140)
@@ -435,3 +456,23 @@ assert '3+18*t' in generator and '1.3+3.2*t' in generator
 assert '3+18*t' in remote_ui and '1.3+3.2*t' in remote_ui
 assert '3+18*t' in native and '1.3+3.2*t' in native
 print('PASS: Organic spectral bloom recipe matches native and Remote previews')
+
+# Output balance test for the global master pan (center is unchanged).
+for pan,quiet_side in ((0,1),(100,0)):
+    probe=api.create(b'.',None)
+    assert probe
+    for key,val in [('wavetable',1),('osc1_pan',50),('osc1_volume',100),('osc2_volume',0),('master_pan',pan)]:
+        api.set(probe,key.encode(),str(val).encode())
+    buffer=(C.c_int16*256)()
+    # The output pan uses one-pole smoothing; start playback after its ramp.
+    for _ in range(40):api.render(probe,buffer,128)
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(probe,note,3,0)
+    energy=[0,0]
+    for _ in range(32):
+        api.render(probe,buffer,128)
+        for channel in range(2):
+            energy[channel]+=sum(v*v for v in buffer[channel::2])
+    assert energy[1-quiet_side]>0 and energy[quiet_side]==0,(pan,energy)
+    api.destroy(probe)
+print('PASS: master pan controls both stereo output extremes')

@@ -15,7 +15,7 @@ Sprig WT aims to make wavetable exploration immediate: one collection of 108 ori
 - Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; stereo pan is now implemented in the development DSP and awaits Move hardware verification.
 - Eight initial phase-warp modes: **Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror, Quantize**. These are independently authored transformations, not exact reproductions of Shrub's algorithms.
 - ADSR amplitude envelope, filter envelope, LFO motion, drive and resonant low-pass filtering.
-- Four native Synth Face canvas page entries are now declared in source (MAIN, OSC 1, OSC 2 and FILTER). It currently approximates the selected waveform rather than reading the exact DSP output, so visuals may differ from sound.
+- Four native canvases (MAIN, OSC 1, OSC 2 and FILTER) use separate Schwung encoder levels. The combined MAIN trace previews both oscillators from a bounded DSP snapshot. Visuals are approximations, not a sample-accurate FFT or DSP oscilloscope.
 - Some older compatibility parameters remain in the metadata. They are not intended to appear in the final simplified performance interface.
 
 ## Target four-page layout
@@ -29,7 +29,7 @@ Sprig WT aims to make wavetable exploration immediate: one collection of 108 ori
 
 **Filter routing decision:** one **master filter** applied to the combined oscillators, not separate filters per oscillator. Planned modes include LP, HP, BP and comb, subject to DSP and CPU testing. The current DSP only implements a resonant low-pass filter.
 
-The on-screen **C / M / E / O** indicators should show relevant modulation on each page. Their final definitions and Schwung page compatibility are still being tested. Four native canvas pages are registered in the DSP and module hierarchy and pass source-level CI checks; their navigation and rendering on the physical Move remain **unverified**.
+Every native face now shows four contextual meter labels. The new smoothed master pan defaults to 50 (center). Filter type and the hybrid dual-LFO matrix remain later DSP phases and are not fake controls. Their final definitions and Schwung page compatibility are still being tested. Four native canvas pages are registered in distinct Schwung hierarchy levels, with correct per-level encoder mappings and one derived snapshot per canvas; their navigation and rendering on the physical Move remain **unverified**.
 
 ## Build and test
 
