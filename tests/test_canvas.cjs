@@ -147,3 +147,15 @@ for(const face of ['main','osc1','osc2']){
   }
 }
 console.log('PASS: all eight curated waveforms render distinctly on main, OSC1 and OSC2 at four positions');
+
+const named=sandbox.globalThis.canvas_overlays;
+assert.deepEqual(Object.keys(named).sort(),['sprig_filter','sprig_main','sprig_osc1','sprig_osc2']);
+for(const [name,entry] of Object.entries(named)){
+  assert.equal(typeof entry.drawPage,'function',name+' must provide drawPage');
+  const lines=[];
+  entry.drawPage({...ctx,line(...args){lines.push(args);}}, {
+    nowMs:1000,values:{wavetable:106,osc2_wavetable:107,position:60,osc2_position:40,voice_activity:0}
+  });
+  assert(lines.length>0,name+' must draw waveform or filter response');
+}
+console.log('PASS: four named native overlay entry points render without changing legacy overlay');
