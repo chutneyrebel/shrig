@@ -32,6 +32,22 @@ jobs:
           test "$(find dist -maxdepth 1 -name '*.tar.gz' -type f | wc -l)" -eq 1
           echo "Artifact payload: dist/sprig-wt-module.tar.gz"
           echo "GitHub Actions downloads are ZIP-wrapped by GitHub. Extract the ZIP once to get the .tar.gz."
+      - name: Write build diagnostic summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## Sprig WT build diagnostics"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- Result of each step:"
+            echo
+          } >> "${GITHUB_STEP_SUMMARY}"
+          # A failed step prevents subsequent build steps; GitHub's job page
+          # identifies the failing step and retains its full logs.
+          echo "Open the run above for the exact failing step and logs." >> "${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v4
         with:
           name: sprig-wt-targz-download
