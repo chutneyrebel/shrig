@@ -72,6 +72,23 @@
       lastX=x+i;lastY=py;
     }
   }
+  // Detune visualization: a second trace separates in phase while notes sound.
+  // Rate and direction follow the oscillator detune controls; no audio readback.
+  function detuneGhost(ctx,x,y,w,h,wave,pos,drift,bank,table,shape,legacyShape,values,seconds){
+    const d1=bounded(value(values,'osc1_detune',50),50,0,100)-50;
+    const d2=bounded(value(values,'osc2_detune',50),50,0,100)-50;
+    const mix=bounded(value(values,'osc2_volume',0),0,0,100)/100;
+    const delta=(d2-d1)*.0005776;
+    if(mix<.02||Math.abs(delta)<.00001)return;
+    const slip=seconds*delta*1.8;
+    const phaseOffset=slip-Math.floor(slip);
+    for(let i=0;i<w;i+=3){
+      const p=((i/w+drift+phaseOffset)%1+1)%1;
+      const v=displayedWave(p,wave,pos,bank,table,shape,legacyShape);
+      const py=y+Math.round(h/2-v*(h/2-2)*.72);
+      ctx.fillRect(x+i,py,1,1,1);
+    }
+  }
   /* Four distinct page renderers. The host must register separate canvas
    * page entries for these to become physical jog-wheel stops. */
   function pageMeters(ctx,meters,H,W){
@@ -152,6 +169,7 @@
        * overlapping rows on the actual Move display. Keep this page visual. */
       const waveY=1, waveH=Math.max(7,H-14);
       trace(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape,legacyShape);
+      if(voices>0)detuneGhost(ctx,1,waveY+1,W-3,waveH,wave,animatedPos,drift,bank,table,shape,legacyShape,v,seconds);
       /* A sparse second harmonic contour gives the technical trace an organic
        * shimmer. It exists only while voices sound and Motion is substantial.
        * The base waveform remains unchanged and idle stays perfectly still. */
