@@ -27,6 +27,7 @@
       lastX=x+i;lastY=py;
     }
   }
+  let frame = 0;
   globalThis.canvas_overlay = {
     drawPage(ctx, o) {
       const v=o && o.values || {};
@@ -40,8 +41,10 @@
       const mix=bounded(value(v,"osc2_level",0),0,0,100);
       const rate=bounded(value(v,"lfo_rate",22),22,0,100);
       const depth=motion/100;
-      const now=Number(o && o.nowMs);
-      const seconds=Number.isFinite(now)?now/1000:0;
+      /* Some Move hosts omit nowMs. Use redraw ticks as a fallback. */
+      frame++;
+      const now=o && o.nowMs;
+      const seconds=(typeof now==="number" && Number.isFinite(now))?now/1000:frame/30;
       /* Modulation-driven phase motion: no idle animation when depth is zero. */
       const hz=.06+.12*rate;
       const drift=depth*.12*Math.sin(seconds*hz*6.28318530718);
