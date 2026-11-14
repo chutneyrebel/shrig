@@ -191,6 +191,43 @@ motion_on=osc2_motion(90)
 assert rms([a-b for a,b in zip(motion_off,motion_on)])>10, 'OSC2 must respond to motion'
 setp('lfo_depth',0)
 print('PASS: independent stereo pan and OSC2 wavetable motion')
+# Warp regression: each mode must preserve neutral at zero amount and
+# produce distinct audio at strong settings on either oscillator.
+# Create a fresh instance for each render to eliminate phase/history drift.
+def warp_audio(osc, mode, amount):
+    probe=api.create(b'.',None)
+    assert probe, 'No free voice slot for warp regression'
+    def put(key,val): api.set(probe,key.encode(),str(val).encode())
+    put('attack',0);put('cutoff',100);put('resonance',0)
+    put('lfo_depth',0);put('filter_env_amt',0);put('lfo_filter',0)
+    put('osc1_volume',100 if osc==1 else 0)
+    put('osc2_volume',100 if osc==2 else 0)
+    put('osc2_level',0)
+    put('wavetable',1);put('osc2_wavetable',1)
+    put('osc1_warp_type',mode if osc==1 else 0)
+    put('osc2_warp_type',mode if osc==2 else 0)
+    put('osc1_warp',amount if osc==1 else 0)
+    put('osc2_warp',amount if osc==2 else 0)
+    msg=(C.c_uint8*3)(0x90,60,110)
+    api.midi(probe,msg,3,0)
+    buf=(C.c_int16*256)()
+    audio=[]
+    for _ in range(48):
+        api.render(probe,buf,128)
+        audio.extend(buf[::2])
+    api.destroy(probe)
+    return audio
+
+for osc in (1,2):
+    baseline=warp_audio(osc,0,0)
+    assert rms(baseline)>100,(osc,'silent baseline')
+    for mode in range(1,8):
+        neutral=warp_audio(osc,mode,0)
+        assert neutral==baseline,(osc,mode,'zero warp amount changes audio')
+        altered=warp_audio(osc,mode,85)
+        difference=rms([a-b for a,b in zip(baseline,altered)])
+        assert difference>10,(osc,mode,'warp not audible',difference)
+print('PASS: seven active warp modes plus Off, zero-amount neutrality on both oscillators')
 # Instance limit and isolation.
 insts=[api.create(b'.',None) for _ in range(7)]
 assert all(insts) and not api.create(b'.',None)
