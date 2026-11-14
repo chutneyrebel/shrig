@@ -33,7 +33,7 @@ typedef struct plugin_api_v2 {
 typedef struct {
     float phase, phase2, increment, env, vel, release_step;
     float ic1, ic2, ic1_r, ic2_r, filter_env, smooth_cut;
-    uint8_t filter_stage;
+    float oe[2],ors[2];uint8_t os[2];uint8_t filter_stage;
     unsigned age;
     uint8_t note, band, stage, down;
 } Voice;
@@ -44,6 +44,7 @@ typedef struct {
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan;
+int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
     float lfo_phase;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
     unsigned age;
@@ -93,7 +94,7 @@ static void defaults(Synth *s){
     s->osc1_warp_type=0;s->osc1_warp=0;s->osc1_detune=50;s->osc1_octave=2;s->osc1_pan=50;s->osc1_volume=100;
     s->osc2_wavetable=1;s->osc2_position=50;s->osc2_warp_type=0;s->osc2_warp=0;s->osc2_detune=50;s->osc2_octave=2;s->osc2_pan=50;s->osc2_volume=0;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->lfo_wt_depth=0;s->drive=0;
-    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;
+    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;s->osc1_attack=s->osc2_attack=10;s->osc1_decay=s->osc2_decay=230;s->osc1_sustain=s->osc2_sustain=72;s->osc1_release=s->osc2_release=240;s->mix_balance=50;
     s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=1;s->smooth_shape=50;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;s->smooth_master_pan=50.f;
@@ -124,14 +125,14 @@ static void note_on(Synth *s,unsigned note,unsigned vel){
     Voice *v=&s->voices[chosen];wipe(v,sizeof(*v));
     v->note=note;v->band=sprig_note_band[note];v->increment=sprig_note_phase_inc[note];
     v->vel=(float)vel/127.0f;v->stage=ATTACK;v->down=1;v->age=++s->age;
-    v->filter_stage=1;v->smooth_cut=(float)s->cutoff;
+    v->filter_stage=1;v->smooth_cut=(float)s->cutoff;v->os[0]=v->os[1]=ATTACK;
 }
 static void note_off(Synth *s,unsigned note){
     for(int i=0;i<SPRIG_VOICES;i++){
         Voice *v=&s->voices[i];
         if(v->stage && v->down && v->note==note){
             v->down=0;v->stage=RELEASE;
-            v->release_step=v->env/(clampf((float)s->release,1.f,2000.f)*.001f*SR);
+            v->release_step=v->env/(clampf((float)s->release,1.f,2000.f)*.001f*SR);for(int o=0;o<2;o++){int ms=o?s->osc2_release:s->osc1_release;v->os[o]=RELEASE;v->ors[o]=v->oe[o]/(clampf((float)ms,1.f,2000.f)*.001f*SR);}
         }
     }
 }
@@ -144,7 +145,7 @@ static void on_midi(void *instance,const uint8_t *msg,int len,int source){
     }else if(kind==0xb0 && len>=3 && (msg[1]==123 || msg[1]==120)){
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];v->down=0;v->stage=RELEASE;
-            v->release_step=v->env/(SR*.015f);
+            v->release_step=v->env/(SR*.015f);for(int o=0;o<2;o++){v->os[o]=RELEASE;v->ors[o]=v->oe[o]/(SR*.015f);}
         }
     }
 }
@@ -157,7 +158,7 @@ static const Param params[]={
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
-    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100)
+    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -264,10 +265,22 @@ static float env_next(Synth *s,Voice *v){
         case SUSTAIN:v->env=sus;break;
         case RELEASE:
             v->env-=v->release_step;
-            if(v->env<=0.f){v->env=0.f;v->stage=0;v->ic1=0;v->ic2=0;v->ic1_r=0;v->ic2_r=0;}break;
+            if(v->env<=0.f){v->env=0.f;if(!(s->osc1_env_enabled&&v->os[0])&&!(s->osc2_env_enabled&&v->os[1]))v->stage=0;v->ic1=0;v->ic2=0;v->ic1_r=0;v->ic2_r=0;}break;
         default:return 0;
     }
     return v->env;
+}
+static float osc_amp(Synth *s,Voice *v,int o){
+ if(!(o?s->osc2_env_enabled:s->osc1_env_enabled))return v->env;
+ int a=o?s->osc2_attack:s->osc1_attack,d=o?s->osc2_decay:s->osc1_decay,su=o?s->osc2_sustain:s->osc1_sustain;
+ float sus=.01f*su,*e=&v->oe[o];
+ switch(v->os[o]){
+ case ATTACK:*e+=1.f/(SR*.001f*clampf((float)a,1.f,2000.f));if(*e>=1.f){*e=1.f;v->os[o]=DECAY;}break;
+ case DECAY:*e-=(1.f-sus)/(SR*.001f*clampf((float)d,1.f,2000.f));if(*e<=sus){*e=sus;v->os[o]=SUSTAIN;}break;
+ case SUSTAIN:*e=sus;break;
+ case RELEASE:*e-=v->ors[o];if(*e<=0.f){*e=0.f;v->os[o]=0;}break;
+ default:return 0.f;
+ }return *e;
 }
 static float lookup(int wave,int frame,int band,float phase){
     /* Legacy bank remains sample-for-sample identical to v0.2. */
@@ -342,7 +355,8 @@ static void render_block(void *instance,int16_t *out,int frames){
         float sumL=0.f,sumR=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
-            float env=env_next(s,v);if(!v->stage)continue;
+            float env=env_next(s,v),amp1=osc_amp(s,v,0),amp2=osc_amp(s,v,1);if(!v->stage&&amp1<=0.f&&amp2<=0.f)continue;if(v->stage==RELEASE&&env<=0.f&&amp1<=0.f&&amp2<=0.f){v->stage=0;continue;}int newmode=s->mix_enabled||s->osc1_env_enabled||s->osc2_env_enabled;
+            float bal=.01f*s->mix_balance,gain1=s->mix_enabled?2.f*(1.f-bal):1.f,gain2=s->mix_enabled?2.f*bal:1.f;
             float table=clampf(s->smooth_table,0.f,107.f);
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
             float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,(float)s->osc1_warp)*256.f;
@@ -355,10 +369,10 @@ static void render_block(void *instance,int16_t *out,int frames){
                 float avg=.5f*(table_at(t0,pos,v->band,ph1)+table_at(t0,pos,v->band,ph2));
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
-            x*=.01f*s->osc1_volume;
+            x*=.01f*s->osc1_volume;if(newmode)x*=gain1*amp1;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,(float)s->osc2_warp)*256.f;
             float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*s->osc2_volume);
-            second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);
+            second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
             float pan1=.01f*(float)s->osc1_pan,pan2=.01f*(float)s->osc2_pan;
             float left=x*(1.f-pan1)+second*(1.f-pan2);
             float right=x*pan1+second*pan2;
@@ -396,8 +410,8 @@ static void render_block(void *instance,int16_t *out,int frames){
             float v2r=v->ic2_r+a2*v->ic1_r+a3*v3r;
             v->ic1_r=2*v1r-v->ic1_r;
             v->ic2_r=2*v2r-v->ic2_r;
-            sumL+=v2*env*v->vel;
-            sumR+=v2r*env*v->vel;
+            sumL+=v2*(newmode?1.f:env)*v->vel;
+            sumR+=v2r*(newmode?1.f:env)*v->vel;
         }
         /* Conservative poly mix to prevent clipping with eight voices. */
         float pan=clampf(s->smooth_master_pan,0.f,100.f);

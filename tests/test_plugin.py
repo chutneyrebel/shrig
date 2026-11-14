@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==48
+assert len(meta['capabilities']['chain_params'])==60
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -476,3 +476,62 @@ for pan,quiet_side in ((0,1),(100,0)):
     assert energy[1-quiet_side]>0 and energy[quiet_side]==0,(pan,energy)
     api.destroy(probe)
 print('PASS: master pan controls both stereo output extremes')
+
+# Phase 2: opt-in envelopes and oscillator mix preserve legacy parameter defaults.
+phase2_keys=['osc1_env_enabled','osc2_env_enabled','osc1_attack','osc1_decay','osc1_sustain','osc1_release','osc2_attack','osc2_decay','osc2_sustain','osc2_release','mix_enabled','mix_balance']
+p2=api.create(b'.',None)
+assert p2
+def p2get(key):
+    buf=C.create_string_buffer(256)
+    assert api.get(p2,key.encode(),buf,len(buf))>=0,key
+    return int(buf.value)
+def p2set(key,value):
+    api.set(p2,key.encode(),str(value).encode())
+assert p2get('osc1_env_enabled')==0 and p2get('osc2_env_enabled')==0
+assert p2get('mix_enabled')==0 and p2get('mix_balance')==50
+for key in phase2_keys:
+    assert key in [p['key'] for p in chain_params],key
+for key in ['osc1_attack','osc2_attack','osc1_release','osc2_release']:
+    p2set(key,9999)
+    assert p2get(key)==2000
+p2set('osc1_env_enabled',1)
+p2set('osc2_env_enabled',1)
+p2set('osc1_attack',800)
+p2set('osc2_attack',1)
+p2set('mix_enabled',1)
+p2set('mix_balance',25)
+state=C.create_string_buffer(4096)
+assert api.get(p2,b'state',state,len(state))>0
+assert b'osc1_attack=800' in state.value and b'mix_balance=25' in state.value
+api.destroy(p2)
+print('PASS: Phase 2 opt-in envelope/mix metadata, defaults, bounds and state roundtrip')
+
+def phase2_audio(osc,attack=1,balance=None):
+    p=api.create(b'.',None)
+    assert p
+    def put(k,v):api.set(p,k.encode(),str(v).encode())
+    put('cutoff',100);put('resonance',0);put('attack',1)
+    put('osc1_volume',100 if osc==1 else 0)
+    put('osc2_volume',100 if osc==2 else 0)
+    put('osc2_level',0)
+    put('osc%d_env_enabled'%osc,1)
+    put('osc%d_attack'%osc,attack)
+    if balance is not None:
+        put('mix_enabled',1);put('mix_balance',balance)
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(p,note,3,0)
+    buf=(C.c_int16*256)()
+    audio=[]
+    for _ in range(12):
+        api.render(p,buf,128)
+        audio.extend(buf[::2])
+    api.destroy(p)
+    return audio
+for o in (1,2):
+    quick=phase2_audio(o,1)
+    slow=phase2_audio(o,2000)
+    assert rms(quick)>rms(slow)*4,(o,rms(quick),rms(slow))
+    full=phase2_audio(o,1,0 if o==1 else 100)
+    muted=phase2_audio(o,1,100 if o==1 else 0)
+    assert rms(full)>rms(muted)*4,(o,'mix balance must isolate oscillators')
+print('PASS: Phase 2 per-oscillator attack and opt-in mix balance change actual PCM')

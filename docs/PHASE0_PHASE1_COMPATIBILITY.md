@@ -27,3 +27,11 @@ The hybrid LFO design approved for Phase 5 (free/synced dual modulators and matr
 The action runs host DSP/ABI tests, native canvas JS tests, AArch64 build and package checks. Even a fully green Actions run does **not** verify Move CPU usage, real knob behavior, jog navigation, Schwung version quirks or audio fidelity.
 
 Before calling this a release, test on Ableton Move: native level navigation, encoder mappings and refresh, osc1/osc2 wave and warp audition, both pan stages, old preset restore, note-on/off animation and idle stillness, filter response, stock Move coexistence and resource use. Keep a known-good backup.
+
+## Phase 2 candidate (not yet hardware-validated)
+
+New OSC 1 Envelope and OSC 2 Envelope child levels expose independent opt-in ADSR envelopes. Each defaults to Legacy, preserving the historical shared ADSR on old presets. OSC MIX exposes an opt-in balance control; Legacy leaves the original per-oscillator volume/pan mix unchanged. The default balance is center. Existing parameter keys, defaults, and ranges remain frozen by the ABI baseline. New keys append to the saved state.
+
+The 8192-byte Schwung descriptor ceiling requires compact metadata. Unused legacy hierarchy levels and redundant presentation-only metadata were pruned; the functional existing root, OSC 1, OSC 2, FILTER, MOTION and AMP levels remain. Some older compatibility-only parameter labels fall back to their keys. New envelope/mix pages inherit their own encoder assignments and do not claim new root-level canvas pages.
+
+**Hardware test gates:** Confirm old presets sound unchanged, independent OSC 1/OSC 2 attack and release differ audibly, mix balance center is neutral, pan/level and polyphony remain stable, and saving/reloading new patches restores all new controls. Do not replace the known-good Phase 1 installation until CI succeeds and a backup exists.
