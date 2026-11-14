@@ -29,7 +29,7 @@ typedef struct plugin_api_v2 {
 } plugin_api_v2_t;
 
 typedef struct {
-    float phase, increment, env, vel, release_step;
+    float phase, phase2, increment, env, vel, release_step;
     float ic1, ic2;
     unsigned age;
     uint8_t note, band, stage, down;
@@ -37,6 +37,8 @@ typedef struct {
 
 typedef struct {
     int wave, position, cutoff, resonance, attack, decay, sustain, release, level;
+    int osc2_level, detune, lfo_rate, lfo_depth, drive;
+    float lfo_phase;
     float smooth_wave, smooth_position, smooth_g, smooth_res, smooth_level;
     unsigned age;
     Voice voices[SPRIG_VOICES];
@@ -82,6 +84,7 @@ static void defaults(Synth *s){
     wipe(s,sizeof(*s));
     s->wave=1;s->position=50;s->cutoff=78;s->resonance=15;
     s->attack=10;s->decay=230;s->sustain=72;s->release=240;s->level=65;
+    s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->drive=0;
     s->smooth_wave=1;s->smooth_position=1.5f;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;
@@ -140,7 +143,8 @@ typedef struct { const char *name; int min,max; size_t offset; } Param;
 #define P(key,hi) {#key,0,hi,offsetof(Synth,key)}
 static const Param params[]={
     P(wave,3),P(position,100),P(cutoff,100),P(resonance,100),
-    P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100)
+    P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
+    P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(drive,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -244,7 +248,13 @@ static void render_block(void *instance,int16_t *out,int frames){
         s->smooth_g+=.004f*(sprig_cutoff_g[s->cutoff]-s->smooth_g);
         s->smooth_res+=.004f*(.01f*(float)s->resonance-s->smooth_res);
         s->smooth_level+=.004f*(.01f*(float)s->level-s->smooth_level);
-        float wave=clampf(s->smooth_wave,0,3),pos=clampf(s->smooth_position,0,3);
+        /* One global low-frequency modulator for subtle continuous wavetable motion. */
+        float lfo_hz=.06f+.12f*(float)s->lfo_rate;
+        s->lfo_phase+=lfo_hz*(256.f/SR);
+        if(s->lfo_phase>=256.f)s->lfo_phase-=256.f;
+        float lfo=lookup(0,0,0,s->lfo_phase);
+        float wave=clampf(s->smooth_wave,0,3);
+        float pos=clampf(s->smooth_position + .015f*s->lfo_depth*lfo,0,3);
         float g=s->smooth_g,k=2.f-1.9f*s->smooth_res;
         float a1=1.f/(1.f+g*(g+k)),a2=g*a1,a3=g*a2;
         float sum=0.f;
@@ -252,8 +262,16 @@ static void render_block(void *instance,int16_t *out,int frames){
             Voice *v=&s->voices[i];if(!v->stage)continue;
             float env=env_next(s,v);if(!v->stage)continue;
             float x=sample_wave(v,wave,pos);
+            if(s->osc2_level>0){
+                /* Optional second free-running saw voice, tuned +/-50 cents. */
+                x+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);
+            }
+            v->phase2+=v->increment*(1.f+.0005776f*((float)s->detune-50.f));
+            if(v->phase2>=256.f)v->phase2-=256.f;
             v->phase+=v->increment;
             if(v->phase>=256.f)v->phase-=256.f;
+            /* Soft clipping before filter: independent nonlinear shaper. */
+            if(s->drive>0){float d=.03f*(float)s->drive;float u=x*(1.f+d);x=u/(1.f+(u<0.f?-u:u)*d*.25f);}
             float v3=x-v->ic2;
             float v1=a1*v->ic1+a2*v3;
             float v2=v->ic2+a2*v->ic1+a3*v3;
