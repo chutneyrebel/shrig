@@ -59,6 +59,21 @@ def render(n=1):
 
 def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 
+# New spectral tables must be DC-centered without changing established IDs.
+# Inspect generated float rows, not just the recipe's intent.
+import re
+table_text=(ROOT/'src/expanded_tables.h').read_text()
+rows=re.findall(r'\\{([^{}]+)\\}',table_text)
+assert len(rows)==96*4*9, ('unexpected expanded table dimensions',len(rows))
+for wave in range(48,96):
+    for frame in range(4):
+        for band in range(9):
+            row=rows[(wave*4+frame)*9+band]
+            samples=[float(x.rstrip('f')) for x in row.split(',') if x.strip()]
+            assert len(samples)==256
+            assert abs(sum(samples)/256)<0.0001,(wave,frame,band,'DC bias')
+            assert max(abs(x) for x in samples)<=0.871,(wave,frame,band,'headroom')
+print('PASS: all new wavetable frames are DC-centered with safe headroom')
 # Stage 3A architecture guard: legacy tables and preset IDs stay untouched.
 header=(ROOT/'src/wavetable_engine.h').read_text()
 assert '#define SPRIG_LEGACY_BANK 0' in header
