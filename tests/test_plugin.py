@@ -226,6 +226,33 @@ classic=sample_with(1,50)
 setp('wavetable',88)
 spectral=sample_with(1,50)
 assert rms([a-b for a,b in zip(classic,spectral)])>100, 'Unified table selector must change audio'
+# Stress every curated table at both extremes with both oscillators sounding.
+# Keep this deterministic: no wall-clock performance threshold on shared CI hosts.
+def curated_stress(first,second,position):
+    probe=api.create(b'.',None)
+    assert probe,'unable to allocate stress-test synth'
+    def put(key,val):api.set(probe,key.encode(),str(val).encode())
+    put('attack',0);put('cutoff',100);put('resonance',0)
+    put('wavetable',first);put('osc2_wavetable',second)
+    put('position',position);put('osc2_position',100-position)
+    put('osc1_volume',100);put('osc2_volume',100)
+    put('lfo_wt_depth',100);put('lfo_rate',70)
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(probe,note,3,0)
+    buffer=(C.c_int16*256)()
+    peak=0;energy=0
+    for _ in range(32):
+        api.render(probe,buffer,128)
+        for sample in buffer:
+            peak=max(peak,abs(sample))
+            energy+=sample*sample
+    api.destroy(probe)
+    assert 20<peak<=32768,(first,second,position,'silent or invalid PCM',peak)
+    assert energy>0,(first,second,position,'silent render')
+for idx in range(8):
+    for pos in (0,50,100):
+        curated_stress(100+idx,100+(idx+3)%8,pos)
+print('PASS: 24 dual-oscillator curated render stress cases with maximum WT modulation')
 # Preserve curated oscillator IDs, morph positions and opt-in modulation in presets.
 # Exercise both oscillators and restore the original state before legacy tests.
 before_curated=getp('state')
