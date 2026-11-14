@@ -59,13 +59,16 @@ def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert len(meta['capabilities']['chain_params'])==14
+assert len(meta['capabilities']['chain_params'])==19
 assert getp('module_id')=='sprig-wt'
 assert getp('attack')=='10'
 assert getp('osc2_level')=='0' and getp('lfo_depth')=='0'
 setp('osc2_level',42);setp('detune',73);setp('lfo_depth',28);setp('drive',25)
 assert getp('osc2_level')=='42' and getp('detune')=='73' and getp('drive')=='25'
 setp('osc2_level',0);setp('lfo_depth',0);setp('drive',0)
+setp('filter_env_amt',65);setp('filter_env_attack',10);setp('filter_env_decay',420);setp('lfo_filter',32)
+assert getp('filter_env_amt')=='65' and getp('filter_env_decay')=='420'
+setp('filter_env_amt',0);setp('lfo_filter',0)
 assert rms(render(10))==0
 # MIDI note-on produces audible nonzero sound.
 midi(0x90,60,105)
