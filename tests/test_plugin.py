@@ -338,3 +338,11 @@ assert 'osc1_octave' in hierarchy['levels']['osc1']['knobs']
 assert 'osc2_octave' in hierarchy['levels']['osc2']['knobs']
 print('PASS: independent octave controls and neutral default')
 
+
+# Core Organic recipe must stay synchronized across generated audio and both UIs.
+generator=(ROOT/'scripts/generate_expanded_tables.py').read_text()
+native=(ROOT/'src/canvas.js').read_text()
+assert '3+18*t' in generator and '1.3+3.2*t' in generator
+assert '3+18*t' in remote_ui and '1.3+3.2*t' in remote_ui
+assert '3+18*t' in native and '1.3+3.2*t' in native
+print('PASS: Organic spectral bloom recipe matches native and Remote previews')
