@@ -43,7 +43,7 @@ typedef struct {
     int osc2_level, detune, lfo_rate, lfo_depth, drive;
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter;
     float lfo_phase;
-    float smooth_wave, smooth_position, smooth_g, smooth_res, smooth_level;
+    float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_g, smooth_res, smooth_level;
     unsigned age;
     Voice voices[SPRIG_VOICES];
 } Synth;
@@ -90,7 +90,7 @@ static void defaults(Synth *s){
     s->attack=10;s->decay=230;s->sustain=72;s->release=240;s->level=65;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->drive=0;
     s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;
-    s->smooth_wave=1;s->smooth_position=1.5f;
+    s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=0;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;
 }
@@ -271,6 +271,8 @@ static void render_block(void *instance,int16_t *out,int frames){
     if(!s){for(int i=0;i<frames*2;i++)out[i]=0;return;}
     for(int j=0;j<frames;j++){
         s->smooth_wave+=.004f*((float)s->wave-s->smooth_wave);
+        s->smooth_bank+=.0015f*((float)s->wt_bank-s->smooth_bank);
+        s->smooth_table+=.0015f*((float)s->wt_table-s->smooth_table);
         s->smooth_position+=.004f*(.03f*(float)s->position-s->smooth_position);
         s->smooth_g+=.004f*(sprig_cutoff_g[s->cutoff]-s->smooth_g);
         s->smooth_res+=.004f*(.01f*(float)s->resonance-s->smooth_res);
@@ -287,14 +289,27 @@ static void render_block(void *instance,int16_t *out,int frames){
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
             float env=env_next(s,v);if(!v->stage)continue;
-            float x;
-            if(s->wt_bank==1){
+            /* Smooth both bank and table transitions. The legacy path stays
+             * exactly unchanged once the blend has settled to zero. */
+            float bank=clampf(s->smooth_bank,0.f,1.f);
+            float x=bank<.00001f?sample_wave(v,wave,pos):0.f;
+            if(bank>=.00001f){
                 int p0=(int)pos,p1=p0<3?p0+1:3;
                 float blend=pos-(float)p0;
-                float a=expanded_lookup(s->wt_table,p0,v->band,v->phase);
-                float b=expanded_lookup(s->wt_table,p1,v->band,v->phase);
-                x=a+(b-a)*blend;
-            }else x=sample_wave(v,wave,pos);
+                float table=clampf(s->smooth_table,0.f,31.f);
+                int t0=(int)table,t1=t0<31?t0+1:31;
+                float tm=table-(float)t0;
+                float a=expanded_lookup(t0,p0,v->band,v->phase);
+                float b=expanded_lookup(t0,p1,v->band,v->phase);
+                float expanded=a+(b-a)*blend;
+                if(tm>.00001f){
+                    float c=expanded_lookup(t1,p0,v->band,v->phase);
+                    float d=expanded_lookup(t1,p1,v->band,v->phase);
+                    expanded+=(c+(d-c)*blend-expanded)*tm;
+                }
+                if(bank<.99999f)x=sample_wave(v,wave,pos)*(1.f-bank)+expanded*bank;
+                else x=expanded;
+            }
             if(s->osc2_level>0){
                 /* Optional second free-running saw voice, tuned +/-50 cents. */
                 x+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);
