@@ -128,7 +128,7 @@ with DEST.open('w') as f:
                                 weight=(.9-.65*t if h==1 else .025/h)+(.08+1.35*t)*math.exp(-((h-(3+18*t))/(1.3+3.2*t))**2)
                                 phase+=.3*math.sin(h*.3+t*3)
                             else: # Alien: radical alternating spectral geometry
-                                weight=(.9 if h==1 and frame==0 else .0)
+                                weight=((.28 if h==1 else .9 if h==5 else .6 if h==11 else 0) if frame==0 else .0)
                                 if frame==1:weight=(1 if h%7==1 else .005)/h**.25
                                 if frame==2:weight=(1 if h in (3,11,23,41) else .002)/h**.12
                                 if frame==3:weight=(1 if h%2==0 else .001)/h**.1
