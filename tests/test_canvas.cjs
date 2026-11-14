@@ -31,18 +31,19 @@ assert(count>25);
 overlay.drawPage(ctx, {values:{}});
 overlay.drawPage({ ...ctx, width: 25, height: 12 }, { values:{} });
 // Modulation must visibly change the trace over time, while zero depth stays still.
-function waveformLines(depth, nowMs) {
+function waveformLines(depth, nowMs, voices=0) {
   const lines=[];
-  overlay.drawPage({...ctx, line(...args){lines.push(args);}}, {nowMs, values:{wave:1,position:50,cutoff:40,lfo_depth:depth,lfo_rate:25}});
+  overlay.drawPage({...ctx, line(...args){lines.push(args);}}, {nowMs, values:{wave:1,position:50,cutoff:40,lfo_depth:depth,lfo_rate:25,voice_activity:voices}});
   return JSON.stringify(lines);
 }
 assert.equal(waveformLines(0,1000),waveformLines(0,1700));
-assert.notEqual(waveformLines(80,1000),waveformLines(80,1700));
-console.log('PASS: idle waveform stable; modulation produces time-dependent motion');
+assert.equal(waveformLines(80,1000,0),waveformLines(80,1700,0));
+assert.notEqual(waveformLines(80,1000,1),waveformLines(80,1700,1));
+console.log('PASS: idle waveform stable even at depth 80; sounding voices enable motion');
 // Missing clock must not freeze a canvas on hosts without nowMs.
-const withoutClockA=waveformLines(80,undefined);
+const withoutClockA=waveformLines(80,undefined,1);
 let withoutClockB=withoutClockA;
-for(let i=0;i<20;i++) withoutClockB=waveformLines(80,undefined);
+for(let i=0;i<20;i++) withoutClockB=waveformLines(80,undefined,1);
 assert.notEqual(withoutClockA,withoutClockB);
 console.log('PASS: missing nowMs uses redraw-frame fallback');
 // Every one of the eight encoders must identify itself in the canvas body.
