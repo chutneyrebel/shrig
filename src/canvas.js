@@ -124,37 +124,105 @@
       ctx.fillRect(x+8,y+2,Math.round(barW*bounded(m[1],0,0,100)/100),3,1);
     });
   }
-  function renderFace(ctx,o,which){
-    const v=o&&o.values||{},W=ctx.width||128,H=ctx.height||40;
-    if(W<32||H<18)return;
-    const second=which==='osc2';
-    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,107)|0;
-    const pos=bounded(value(v,second?'osc2_position':'position',50),50,0,100)/100;
-    const shape=bounded(value(v,'shape',50),50,0,100);
-    const wave=Math.min(3,selected),bank=selected>=4?1:0,table=Math.max(0,selected-4);
-    const voices=bounded(value(v,'voice_activity',0),0,0,8);
-    const motion=bounded(value(v,'lfo_depth',0),0,0,100)+bounded(value(v,'lfo_wt_depth',0),0,0,100);
+
+  /* Exactly one extra_keys read from DSP, no dynamic DSP queries in JS. */
+  const snapshotKeys=[
+    'wavetable','position','osc1_warp_type','osc1_warp','osc1_detune',
+    'osc1_pan','osc1_volume','osc2_wavetable','osc2_position',
+    'osc2_warp_type','osc2_warp','osc2_detune','osc2_pan','osc2_volume',
+    'shape','lfo_rate','lfo_depth','lfo_wt_depth','cutoff','resonance',
+    'drive','filter_env_amt','lfo_filter','master_pan','voice_activity'
+  ];
+  function faceValues(o){
+    const initial=(o&&o.values)||{};
+    if(typeof initial.face_snapshot!=='string')return initial;
+    const parts=initial.face_snapshot.split(',');
+    if(parts.length!==snapshotKeys.length)return initial;
+    const result={...initial};
+    for(let i=0;i<parts.length;i++){
+      const n=Number(parts[i]);
+      if(!Number.isFinite(n))return initial;
+      result[snapshotKeys[i]]=n;
+    }
+    return result;
+  }
+  /* Same piecewise warp curves as DSP, drawn on a low-cost mono preview. */
+  function warpedPhase(p,mode,amount){
+    const a=bounded(amount,0,0,100)/100;
+    if(!mode||!a)return p;
+    if(mode===1)p=(p*(1+3*a))%1;
+    else if(mode===2)p+=(p*p-p)*a*.95;
+    else if(mode===3)p+=(p-p*p)*a*.95;
+    else if(mode===4){const q=.5+.45*a;p=p<q?.5*p/q:.5+.5*(p-q)/(1-q);}
+    else if(mode===5){const q=.5-.4*a;p=p<q?.5*p/q:.5+.5*(p-q)/(1-q);}
+    else if(mode===6){const z=p*(1+2*a),n=Math.floor(z);p=(n%2)?1-(z-n):z-n;}
+    else if(mode===7){const steps=64-60*a;p=Math.floor(p*steps)/steps;}
+    return Math.max(0,Math.min(.99999,p));
+  }
+  function oscillatorPreview(phase,v,osc2,seconds,active){
+    const prefix=osc2?'osc2_':'osc1_';
+    const id=bounded(value(v,osc2?'osc2_wavetable':'wavetable',1),1,0,107)|0;
+    const wave=Math.min(3,id),bank=id>=4?1:0,table=Math.max(0,id-4);
+    const position=bounded(value(v,osc2?'osc2_position':'position',50),50,0,100)/100;
     const rate=bounded(value(v,'lfo_rate',22),22,0,100);
-    const seconds=Number.isFinite(o&&o.nowMs)?o.nowMs/1000:frame/30;
-    const drift=voices>0?motion*.005*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
+    const depth=bounded(value(v,'lfo_depth',0),0,0,100);
+    const wtDepth=bounded(value(v,'lfo_wt_depth',0),0,0,100);
+    const modulation=active?(depth+wtDepth)*.005*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
+    const pos=Math.max(0,Math.min(1,position+modulation));
+    const detune=bounded(value(v,prefix+'detune',50),50,0,100);
+    const slip=active?seconds*(detune-50)*.0005776*2:0;
+    const raw=((phase+slip)%1+1)%1;
+    const warped=warpedPhase(raw,bounded(value(v,prefix+'warp_type',0),0,0,7)|0,value(v,prefix+'warp',0));
+    const shape=osc2?50:bounded(value(v,'shape',50),50,0,100);
+    return displayedWave(warped,wave,pos,bank,table,shape,shape);
+  }
+  function drawOscillators(ctx,v,which,seconds,active,W,H){
+    const width=W-3,height=Math.max(7,H-15);
+    const vol1=bounded(value(v,'osc1_volume',100),100,0,100)/100;
+    const vol2=bounded(value(v,'osc2_volume',0),0,0,100)/100;
+    const scale=which==='main'?Math.max(.5,vol1+vol2):1;
+    let last=0;
+    for(let i=0;i<width;i++){
+      const phase=i/width;
+      let sample;
+      if(which==='main'){
+        sample=(vol1*oscillatorPreview(phase,v,false,seconds,active)+
+                vol2*oscillatorPreview(phase,v,true,seconds,active))/scale;
+      }else sample=oscillatorPreview(phase,v,which==='osc2',seconds,active);
+      const y=2+Math.round(height/2-Math.max(-1,Math.min(1,sample))*(height/2-2));
+      if(i)ctx.line(i,last,i+1,y,1);
+      last=y;
+    }
+  }
+  function renderFace(ctx,o,which){
+    const v=faceValues(o),W=ctx.width||128,H=ctx.height||40;
+    if(W<32||H<18)return;
+    frame++;
+    const seconds=(o&&Number.isFinite(o.nowMs))?o.nowMs/1000:frame/30;
+    const active=bounded(value(v,'voice_activity',0),0,0,8)>0;
     if(which==='filter'){
+      /* Global LP filter preview. Later filter modes are not yet executable. */
       const cutoff=bounded(value(v,'cutoff',78),78,0,100);
       const res=bounded(value(v,'resonance',15),15,0,100);
       const y0=2,h=Math.max(8,H-16);
-      let lastY=0;
+      let previous=0;
       for(let x=0;x<W-2;x++){
         const t=x/(W-2),center=.1+.8*cutoff/100;
         const slope=1/(1+Math.pow(Math.max(.001,t)/Math.max(.001,center),4));
         const peak=(res/100)*.4*Math.exp(-Math.pow((t-center)/.09,2));
         const y=y0+Math.round(h*(1-Math.min(1,slope+peak)));
-        if(x)ctx.line(x,y0+lastY,x+1,y,1);
-        lastY=y-y0;
+        if(x)ctx.line(x,y0+previous,x+1,y,1);
+        previous=y-y0;
       }
       pageMeters(ctx,[['C',cutoff],['R',res],['E',value(v,'filter_env_amt',0)],['L',value(v,'lfo_filter',0)]],H,W);
     }else{
-      trace(ctx,1,2,W-3,Math.max(7,H-15),wave,Math.max(0,Math.min(1,pos+drift)),drift,bank,table,shape,shape);
-      if(which==='main')pageMeters(ctx,[['C',value(v,'cutoff',78)],['M',motion],['E',value(v,'filter_env_amt',0)],['O',value(v,'osc2_volume',0)]],H,W);
-      else pageMeters(ctx,[['W',value(v,second?'osc2_warp': 'osc1_warp',0)],['P',value(v,second?'osc2_pan':'osc1_pan',50)],['V',value(v,second?'osc2_volume':'osc1_volume',100)],['M',motion]],H,W);
+      drawOscillators(ctx,v,which,seconds,active,W,H);
+      if(which==='main'){
+        pageMeters(ctx,[['R',value(v,'lfo_rate',22)],['D',value(v,'lfo_depth',0)],['F',value(v,'lfo_filter',0)],['P',value(v,'master_pan',50)]],H,W);
+      }else{
+        const prefix=which==='osc2'?'osc2_':'osc1_';
+        pageMeters(ctx,[['W',value(v,prefix+'warp',0)],['T',value(v,which==='osc2'?'osc2_position':'position',50)],['P',value(v,prefix+'pan',50)],['V',value(v,prefix+'volume',which==='osc2'?0:100)]],H,W);
+      }
     }
   }
   let frame = 0;
