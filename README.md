@@ -1,54 +1,69 @@
-# Sprig WT v0.2.0 development (experimental)
+# Sprig WT
 
-A small, independently implemented, Shrub-inspired wavetable synthesizer module for [Schwung](https://schwung.dev/) on Ableton Move. This is not a port of Shrub and includes **no Shrub/Xfer firmware or proprietary wavetable assets**.
+**Experimental wavetable synthesizer for Ableton Move via Schwung.** Independently developed and inspired by exploratory wavetable instruments such as Shrub. Not a port of Shrub, and no proprietary Shrub wavetables or code are included.
 
-**Status:** ARM64 DSP and archive built locally; host-side DSP smoke tests passed. **Not tested on actual Move hardware.** Install at your own risk after backing up Move sets and learning Schwung recovery procedures.
+> **Development status (14 November 2026):** Work in progress on `feature/shrub-inspired-synth`. The latest dual-oscillator changes are **not hardware-verified**. Do not install a failing or unverified CI artifact. The stable v0.1.0 release remains untouched.
 
-## Synth
+## Vision
 
-- 8-voice polyphony, second saw oscillator, detune, LFO wavetable movement, nonlinear drive, and velocity; round-robin oldest voice stealing
-- 4 originally generated wavetable families (sine, saw, square/pulse, triangle), each with 4 morphable timbre frames
-- Per-note band-limited tables, linear table interpolation, smooth morphing
-- 2-pole zero-delay-feedback state-variable low-pass filter with resonance
-- Attack, decay, sustain, release; bounded audio; no runtime heap allocations, locking, I/O, or subprocesses
-- `state` parameter for round-trip patch storage; version 0.1 has integer controls
+Sprig WT aims to make wavetable exploration immediate: one collection of 52 original waveforms (four classic and 48 spectral), independent oscillators, hands-on warp transformations, motion, and clear visual feedback. No separate Legacy/Expanded bank selection is needed in the intended interface.
 
-Move's eight performance knobs: **Wave**, **WT Position**, **Osc 2 Mix**, **Detune**, **Cutoff**, **Resonance**, **Motion Depth**, **Output**. Navigate to Oscillators, Filter + Color, Motion, Amp Envelope and Output for more controls. A custom web synth panel is included for Schwung Manager's Remote UI. The dedicated on-device graphical synthesizer face is not yet implemented.
+## Implemented in the development source
 
-## Build (Mac/Linux)
+- Freestanding C11 audio engine for 44.1 kHz stereo output, eight voices and band-limited wavetable playback.
+- Unified wavetable selection **0–51** with four interpolated frames per table.
+- Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; independent stereo pan is not yet implemented.
+- Eight initial phase-warp modes: **Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror, Quantize**. These are independently authored transformations, not exact reproductions of Shrub's algorithms.
+- ADSR amplitude envelope, filter envelope, LFO motion, drive and resonant low-pass filtering.
+- A single native Synth Face canvas exists. It currently approximates the selected waveform rather than reading the exact DSP output, so visuals may differ from sound.
+- Some older compatibility parameters remain in the metadata. They are not intended to appear in the final simplified performance interface.
 
-Requires Python 3, Clang, LLVM lld, `readelf`, `nm`, `gcc` (for the desktop tests). The build creates a standalone AArch64 `.so` that has **no glibc/libm dynamic dependencies** and does not need a cross sysroot.
+## Target four-page layout
+
+| Page | Graph | Controls |
+| --- | --- | --- |
+| **MAIN** | Combined OSC 1 + OSC 2 waveform | Motion Rate, Motion Depth, LFO Filter Depth |
+| **OSC 1** | OSC 1 waveform | Wavetable, Position, Warp Type, Warp Amount, Detune, Pan, Volume |
+| **OSC 2** | OSC 2 waveform | Wavetable, Position, Warp Type, Warp Amount, Detune, Pan, Volume |
+| **FILTER** | Combined waveform after filtering | Cutoff, Resonance, Filter Type |
+
+**Filter routing decision:** one **master filter** applied to the combined oscillators, not separate filters per oscillator. Planned modes include LP, HP, BP and comb, subject to DSP and CPU testing. The current DSP only implements a resonant low-pass filter.
+
+The on-screen **C / M / E / O** indicators should show relevant modulation on each page. Their final definitions and Schwung page compatibility are still being tested. Four independent native canvas pages are **not yet implemented or verified**.
+
+## Build and test
+
+Requirements: Python 3, Clang, LLVM lld, GNU binutils, GCC and Node.js for the canvas tests.
 
 ```bash
 python3 scripts/generate_tables.py
 python3 tests/test_plugin.py
+node tests/test_canvas.cjs
 bash scripts/build.sh
 python3 tests/check_package.py
 ```
 
-Use the Actions workflow for a reproducible archive from GitHub.
+The build generates `dist/sprig-wt-module.tar.gz`. GitHub Actions publishes it as the **sprig-wt-targz-download** artifact, which GitHub wraps in a ZIP. Extract the ZIP once to obtain the actual `.tar.gz`.
 
-The resulting archive is `dist/sprig-wt-module.tar.gz` containing `sprig-wt/module.json` and `sprig-wt/dsp.so`. The target directory is `/data/UserData/schwung/modules/sound_generators/sprig-wt`.
+[View CI builds](https://github.com/chutneyrebel/shrig/actions)
 
-## Schwung Manager distribution
+Only use a build whose full workflow is marked **Success**. CI success verifies desktop tests, packaging and cross-compilation, **not** behavior on the actual Move.
 
-**Manager installs from a published module repository**, not necessarily by accepting an arbitrary local tarball upload. For Manager installation, publish this code as a GitHub repository, run its Actions workflow, attach the generated `sprig-wt-module.tar.gz` to a GitHub release, and create a `release.json` with the exact release download URL. Add `owner/repo` using the Manager's supported module repository workflow. Do not invent an unverified release URL.
+## Installation and safety
 
-For a first hardware test, there is also an optional manual SSH path in [docs/HARDWARE_TEST.md](docs/HARDWARE_TEST.md). The package layout is compatible with Schwung's sound-generator module convention, but **Manager installation has not yet been verified on your device**.
+See [hardware test instructions](docs/HARDWARE_TEST.md) before changing anything on the device. Back up your Move sets and existing Sprig WT installation. The expected module directory is `/data/UserData/schwung/modules/sound_generators/sprig-wt`; verify the packaging and supported Schwung Manager installation route before deploying.
 
-## Repository guidance
+Do not overwrite a known-good installation with an experimental build unless you can restore it. Schwung v1.9 compatibility, canvas navigation, encoder refresh, stereo pan and filter variants require on-device verification.
 
-Use a **new dedicated repository** such as `chutneyrebel/sprig-wt`, with development branch `feature/shrub-inspired-synth`. Do not commit files into Schwung's upstream `main` or existing SchwungPocket project. The included workflow expects repository root. This local source ZIP is ready to place into a newly created repo.
+## Development priorities
 
-## License and attribution
+1. **Phase 1:** Dual wavetable oscillator DSP, independently controlled warp, audio tests and stereo pan.
+2. **Phase 2:** Four native Synth Face pages and graph rendering that matches oscillator and filter mathematics; confirm Schwung's page-navigation contract.
+3. **Phase 3:** Master LP/HP/BP/comb modes, filter display, modulation indicators, CPU profiling and regression tests.
+4. **Hardware acceptance:** Verify each page, knob, preset restoration, note handling, CPU load and audible warp behavior on Ableton Move.
 
-Original DSP and generated wavetable definitions in this prototype are independently authored for this experiment. License for this prototype: MIT, see LICENSE. The public Schwung plugin ABI and metadata conventions are interface references, not copied DSP algorithms. The proprietary Shrub firmware is intentionally omitted.
+## Repository and licensing
 
-No connection to or endorsement by Ableton, Xfer Records, or the Shrub authors.
+Current repository: [chutneyrebel/shrig](https://github.com/chutneyrebel/shrig). Development branch: `feature/shrub-inspired-synth`. Stable v0.1.0 must remain unchanged.
 
-## v0.2.0 development status
-
-- Source changes committed to `feature/shrub-inspired-synth`; **not released**.
-- Additive synth controls and a remote browser interface; no proprietary Shrub assets.
-- Existing installed v0.1.0 remains unchanged until a verified v0.2.0 release is published.
-- GitHub Actions and new Move hardware compatibility require confirmation before installation.
+MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton, the Schwung developers, Xfer Records or the creators of Shrub.
