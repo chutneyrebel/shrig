@@ -59,6 +59,18 @@ def render(n=1):
 
 def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 
+# The three sound-design categories must cover each expanded waveform once.
+catalog=json.loads((ROOT/'src/wavetable_catalog.json').read_text())
+assert catalog['classic']['ids']==[0,3]
+assert set(catalog['categories'])=={'organic','industrial','vocal'}
+ids=[]
+for category,families in catalog['categories'].items():
+    for family in families:
+        lo,hi=family['ids']
+        assert hi-lo==3,(category,family)
+        ids.extend(range(lo,hi+1))
+assert sorted(ids)==list(range(4,100)), 'Catalog must cover each expanded wavetable exactly once'
+print('PASS: organic, industrial and vocal catalog covers all 96 expanded waveforms')
 # New spectral tables must be DC-centered without changing established IDs.
 # Inspect generated float rows, not just the recipe's intent.
 import re
