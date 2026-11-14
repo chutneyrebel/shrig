@@ -1,0 +1,43 @@
+{
+  "id": "sprig-wt",
+  "name": "Sprig WT",
+  "abbrev": "SPRIG",
+  "version": "0.1.0",
+  "description": "Original lightweight polyphonic wavetable synthesizer for Schwung on Move; inspired by Shrub's workflow, not its proprietary DSP.",
+  "author": "Shrook / independent prototype",
+  "api_version": 2,
+  "dsp": "dsp.so",
+  "capabilities": {
+    "audio_out": true,
+    "audio_in": false,
+    "midi_in": true,
+    "midi_out": false,
+    "chainable": true,
+    "component_type": "sound_generator",
+    "chain_params": [
+      {"key":"wave", "name":"Wave", "type":"enum", "options":["Sine","Saw","Square","Triangle"], "default":1},
+      {"key":"position", "name":"WT Position", "type":"float", "min":0,"max":100,"step":1,"default":50,"display_format":"%.0f"},
+      {"key":"cutoff", "name":"Cutoff", "type":"float", "min":0,"max":100,"step":1,"default":78,"display_format":"%.0f"},
+      {"key":"resonance", "name":"Resonance", "type":"float", "min":0,"max":100,"step":1,"default":15,"display_format":"%.0f"},
+      {"key":"attack", "name":"Attack", "type":"float", "min":0,"max":2000,"step":1,"default":10,"unit":"ms","display_format":"%.0f"},
+      {"key":"decay", "name":"Decay", "type":"float", "min":0,"max":2000,"step":1,"default":230,"unit":"ms","display_format":"%.0f"},
+      {"key":"sustain", "name":"Sustain", "type":"float", "min":0,"max":100,"step":1,"default":72,"display_format":"%.0f"},
+      {"key":"release", "name":"Release", "type":"float", "min":0,"max":2000,"step":1,"default":240,"unit":"ms","display_format":"%.0f"},
+      {"key":"level", "name":"Output Level", "type":"float", "min":0,"max":100,"step":1,"default":65,"display_format":"%.0f"}
+    ],
+    "ui_hierarchy": {
+      "levels": {
+        "root": {
+          "label":"Sprig WT",
+          "knobs":["wave","position","cutoff","resonance","attack","decay","sustain","release"],
+          "params":["wave","position","cutoff","resonance","attack","decay","sustain","release",{"level":"output","label":"Output"}]
+        },
+        "output": {
+          "label":"Output",
+          "knobs":["level"],
+          "params":["level"]
+        }
+      }
+    }
+  }
+}

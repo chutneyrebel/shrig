@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Host-side ABI smoke tests for Sprig WT, no Move access needed."""
+import ctypes as C
+import json
+import math
+import os
+from pathlib import Path
+import statistics
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+BUILD = ROOT / 'build'
+BUILD.mkdir(exist_ok=True)
+if not (ROOT/'src/tables.h').is_file():
+    subprocess.run(['python3',str(ROOT/'scripts/generate_tables.py')],check=True)
+so = BUILD / 'dsp-host.so'
+subprocess.run(['gcc', '-std=c11', '-O2', '-shared', '-fPIC', '-ffreestanding', '-fno-builtin',
+                '-fvisibility=hidden', str(ROOT/'src/dsp.c'), '-o', str(so)],check=True)
+# Build with a structure ABI matching the public Schwung plugin_api_v2_t declaration.
+CREATE = C.CFUNCTYPE(C.c_void_p,C.c_char_p,C.c_char_p)
+DESTROY = C.CFUNCTYPE(None,C.c_void_p)
+MIDI = C.CFUNCTYPE(None,C.c_void_p,C.POINTER(C.c_uint8),C.c_int,C.c_int)
+SET = C.CFUNCTYPE(None,C.c_void_p,C.c_char_p,C.c_char_p)
+GET = C.CFUNCTYPE(C.c_int,C.c_void_p,C.c_char_p,C.c_char_p,C.c_int)
+RENDER = C.CFUNCTYPE(None,C.c_void_p,C.POINTER(C.c_int16),C.c_int)
+class Plugin(C.Structure):
+    _fields_ = [('api_version',C.c_uint32),('create',CREATE),('destroy',DESTROY),
+                ('midi',MIDI),('set',SET),('get',GET),('error',GET),('render',RENDER)]
+lib=C.CDLL(str(so))
+lib.move_plugin_init_v2.restype=C.POINTER(Plugin)
+lib.move_plugin_init_v2.argtypes=[C.c_void_p]
+api=lib.move_plugin_init_v2(None).contents
+assert api.api_version==2
+inst=api.create(b'.',None)
+assert inst
+
+def midi(status,note,velocity,src=0):
+    buf=(C.c_uint8*3)(status,note,velocity)
+    api.midi(inst,buf,3,src)
+
+def setp(k,v):api.set(inst,k.encode(),str(v).encode())
+def getp(k):
+    buf=C.create_string_buffer(2048)
+    r=api.get(inst,k.encode(),buf,2048)
+    assert r>=0,(k,r)
+    return buf.value.decode()
+def render(n=1):
+    buf=(C.c_int16*256)()
+    out=[]
+    for _ in range(n):
+        api.render(inst,buf,128)
+        out.extend(buf[::2])
+        assert list(buf[0::2])==list(buf[1::2])
+    return out
+
+def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
+
+meta=json.loads((ROOT/'src/module.json').read_text())
+assert meta['api_version']==2 and meta['id']=='sprig-wt'
+assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
+assert len(meta['capabilities']['chain_params'])==9
+assert getp('module_id')=='sprig-wt'
+assert getp('attack')=='10'
+assert rms(render(10))==0
+# MIDI note-on produces audible nonzero sound.
+midi(0x90,60,105)
+played=render(50)
+assert rms(played[512:])>50,rms(played)
+assert max(abs(x) for x in played)<32768
+# Note-off tail returns to silence.
+midi(0x80,60,0)
+tail=render(140)
+assert rms(tail[-256:])<1
+# Waveform vs position changes materially alter the output.
+def sample_with(wave,position):
+    midi(0xB0,123,0);render(8)
+    setp('wave',wave);setp('position',position)
+    render(80)
+    midi(0x90,60,110)
+    x=render(20)
+    midi(0x80,60,0)
+    render(120)
+    return x
+x=sample_with(1,0)
+y=sample_with(1,100)
+assert rms([a-b for a,b in zip(x,y)])>100, 'Position parameter is not audible'
+# String enum path supports UI labels.
+setp('wave','Triangle');assert getp('wave')=='3'
+setp('wave','Sine');assert getp('wave')=='0'
+setp('wave','Square');assert getp('wave')=='2'
+# Round-trip presets and clamp out-of-range writes.
+setp('attack',112);setp('cutoff',35);setp('level',70)
+state=getp('state')
+setp('attack',1950);setp('cutoff',99)
+setp('state',state)
+assert getp('attack')=='112' and getp('cutoff')=='35'
+setp('sustain',999);assert getp('sustain')=='100'
+setp('release',-500);assert getp('release')=='0'
+setp('release',280)
+# Maximum voice stress, bounded PCM and valid output.
+for n in range(48,72):midi(0x90,n,127)
+poly=render(200)
+assert 0 < rms(poly) and max(abs(v) for v in poly)<=32767
+for n in range(48,72):midi(0x80,n,0)
+render(200)
+# Instance limit and isolation.
+insts=[api.create(b'.',None) for _ in range(7)]
+assert all(insts) and not api.create(b'.',None)
+for p in insts:api.destroy(p)
+api.destroy(inst)
+print('PASS: ABI, render, MIDI, polyphony, wavetable position, enum, state, clamp, limit')
+print('Mono audio RMS:',round(rms(played),1))
+print('Polyphony audio RMS:',round(rms(poly),1))
