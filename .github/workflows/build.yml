@@ -17,6 +17,8 @@ jobs:
         run: python3 scripts/generate_tables.py
       - name: Run desktop ABI and audio tests
         run: python3 tests/test_plugin.py
+      - name: Test on-device graphics contract
+        run: node tests/test_canvas.cjs
       - name: Cross-compile and assemble Schwung archive
         run: bash scripts/build.sh
       - name: Verify package and binary
