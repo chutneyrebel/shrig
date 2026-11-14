@@ -86,13 +86,15 @@ for wave in range(48,96):
             assert abs(sum(samples)/256)<0.0001,(wave,frame,band,'DC bias')
             assert max(abs(x) for x in samples)<=0.871,(wave,frame,band,'headroom')
 print('PASS: all new wavetable frames are DC-centered with safe headroom')
-# Remote category browser must expose stable ranges for both oscillators.
+# Remote curated discovery keeps the full numeric ID range for preset recall.
 remote=(ROOT/'src/web_ui.html').read_text()
-for label in ('Classic','Original Spectral','Organic / Atmospheric','Industrial / Metallic','Vocal / Formant'):
-    assert label in remote, ('missing wavetable category',label)
-for boundary in ('0,3','4,51','52,67','68,83','84,99'):
-    assert boundary in remote, ('missing wavetable range',boundary)
-assert "categoryPicker(key)" in remote and "'osc2_wavetable'" in remote
+assert 'const curatedWaves=[' in remote and 'curatedIds' in remote
+for label in ('Sine / Pure','Glass Partials','Reed Formant','Metallic Cluster','Alien Spectral'):
+    assert label in remote, ('missing curated sound',label)
+assert "['wavetable','OSC 1 Wavetable',0,99,1]" in remote
+assert "['osc2_wavetable','OSC 2 Wavetable',0,99,1]" in remote
+assert 'Other / Existing Preset' in remote
+print('PASS: curated discovery and legacy preset IDs coexist')
 # Stage 3A architecture guard: legacy tables and preset IDs stay untouched.
 header=(ROOT/'src/wavetable_engine.h').read_text()
 assert '#define SPRIG_LEGACY_BANK 0' in header
