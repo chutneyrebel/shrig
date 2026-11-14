@@ -40,12 +40,15 @@
       const env=bounded(value(v,"filter_env_amt",0),0,0,100);
       const mix=bounded(value(v,"osc2_level",0),0,0,100);
       const rate=bounded(value(v,"lfo_rate",22),22,0,100);
-      const depth=motion/100;
+      /* Only sounding voices (including release tails) enable motion.
+       * A missing activity read is treated as idle, never as always-on. */
+      const voices=bounded(value(v,"voice_activity",0),0,0,8);
+      const depth=voices>0?motion/100:0;
       /* Some Move hosts omit nowMs. Use redraw ticks as a fallback. */
       frame++;
       const now=o && o.nowMs;
       const seconds=(typeof now==="number" && Number.isFinite(now))?now/1000:frame/30;
-      /* Modulation-driven phase motion: no idle animation when depth is zero. */
+      /* Motion depth shapes the visual only while a voice is sounding. */
       const hz=.06+.12*rate;
       const drift=depth*.12*Math.sin(seconds*hz*6.28318530718);
       const animatedPos=Math.max(0,Math.min(1,pos+depth*.12*Math.sin(seconds*hz*6.28318530718)));
