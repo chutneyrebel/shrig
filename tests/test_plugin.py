@@ -59,13 +59,15 @@ def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert len(meta['capabilities']['chain_params'])==19
+assert len(meta['capabilities']['chain_params'])==20
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
 face=next((p for p in chain_params if p.get('key')=='face'), None)
 assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
 assert face['canvas_script']=='canvas.js'
+assert 'voice_activity' in face['extra_keys']
+assert getp('voice_activity')=='0'
 hierarchy=json.loads(getp('ui_hierarchy'))
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
@@ -82,6 +84,7 @@ setp('filter_env_amt',0);setp('lfo_filter',0)
 assert rms(render(10))==0
 # MIDI note-on produces audible nonzero sound.
 midi(0x90,60,105)
+assert getp('voice_activity')=='1'
 played=render(50)
 assert rms(played[512:])>50,rms(played)
 assert max(abs(x) for x in played)<32768
@@ -89,6 +92,7 @@ assert max(abs(x) for x in played)<32768
 midi(0x80,60,0)
 tail=render(140)
 assert rms(tail[-256:])<1
+assert getp('voice_activity')=='0'
 # Waveform vs position changes materially alter the output.
 def sample_with(wave,position):
     midi(0xB0,123,0);render(8)
@@ -119,8 +123,10 @@ setp('release',280)
 for n in range(48,72):midi(0x90,n,127)
 poly=render(200)
 assert 0 < rms(poly) and max(abs(v) for v in poly)<=32767
+assert getp('voice_activity')=='8'
 for n in range(48,72):midi(0x80,n,0)
 render(200)
+assert getp('voice_activity')=='0'
 # Instance limit and isolation.
 insts=[api.create(b'.',None) for _ in range(7)]
 assert all(insts) and not api.create(b'.',None)
