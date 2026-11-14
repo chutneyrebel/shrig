@@ -159,6 +159,14 @@
   }
   let frame = 0;
   globalThis.sprig_faces = {main:(ctx,o)=>renderFace(ctx,o,'main'),osc1:(ctx,o)=>renderFace(ctx,o,'osc1'),osc2:(ctx,o)=>renderFace(ctx,o,'osc2'),filter:(ctx,o)=>renderFace(ctx,o,'filter')};
+  // Named overlay entry points for future Schwung as_page registrations.
+  // Keep the existing default overlay intact until hierarchy registration is validated.
+  globalThis.canvas_overlays = {
+    sprig_main: {drawPage:(ctx,o)=>renderFace(ctx,o,'main')},
+    sprig_osc1: {drawPage:(ctx,o)=>renderFace(ctx,o,'osc1')},
+    sprig_osc2: {drawPage:(ctx,o)=>renderFace(ctx,o,'osc2')},
+    sprig_filter: {drawPage:(ctx,o)=>renderFace(ctx,o,'filter')}
+  };
   globalThis.canvas_overlay = {
     drawPage(ctx, o) {
       const v=o && o.values || {};
