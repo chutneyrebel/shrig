@@ -13,7 +13,7 @@ assert meta['api_version']==2
 assert len((p/'src/module.json').read_bytes()) < 8192
 with tarfile.open(archive,'r:gz') as tar:
     names=tar.getnames()
-    assert 'sprig-wt/module.json' in names and 'sprig-wt/dsp.so' in names and 'sprig-wt/web_ui.html' in names
+    assert 'sprig-wt/module.json' in names and 'sprig-wt/dsp.so' in names and 'sprig-wt/web_ui.html' in names and 'sprig-wt/canvas.js' in names
     for member in tar.getmembers():
         assert member.name.startswith('sprig-wt/') or member.name=='sprig-wt', member.name
         assert member.isfile() or member.isdir(),member.name
