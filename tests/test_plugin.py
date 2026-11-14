@@ -138,6 +138,13 @@ assert getp('wave') in ('0','1','2','3')
 # Expanded bank is opt-in: old state without new keys must stay in Legacy.
 setp('wt_bank',1);setp('wt_table',47)
 assert getp('wt_bank')=='1' and getp('wt_table')=='47'
+# Spectral Shape must affect audio, not just UI metadata.
+setp('spectral_shape',0)
+dark=sample_with(1,50)
+setp('spectral_shape',100)
+bright=sample_with(1,50)
+assert rms([a-b for a,b in zip(dark,bright)])>50, 'Spectral Shape must audibly alter the expanded waveform'
+setp('spectral_shape',50)
 expanded=sample_with(1,50)
 setp('wt_bank',0)
 legacy=sample_with(1,50)
