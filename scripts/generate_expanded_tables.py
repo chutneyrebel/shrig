@@ -24,15 +24,15 @@ with DEST.open('w') as f:
                         # Eight spectral character families, four timbre variants.
                         family=wave//4
                         variant=wave%4
-                        tilt=1.15+.23*variant+.15*frame
+                        tilt=.85+.33*variant+.22*frame
                         if family==0: weight=1/h**tilt
-                        elif family==1: weight=(1 if h%2 else .07)/h**tilt
-                        elif family==2: weight=(1 if h%3==1 else .08)/h**tilt
-                        elif family==3: weight=(1 if h%4==1 else .04)/h**tilt
+                        elif family==1: weight=(1 if h%2 else .01)/h**tilt
+                        elif family==2: weight=(1 if h%3==1 else .01)/h**tilt
+                        elif family==3: weight=(1 if h%4==1 else .01)/h**tilt
                         elif family==4: weight=(.2+ .8*abs(math.sin(h*(.55+.12*variant)+frame*.2)))/h**tilt
-                        elif family==5: weight=(1 if abs(h-(3+variant*2+frame*2))<=2 else .06)/h**(.7+.12*frame)
-                        elif family==6: weight=(1 if h in (1,2+variant,5+frame,9+variant*2) else .02)/h**(.6+.1*frame)
-                        else: weight=(.1+.9*abs(math.cos(h*(1.2+.13*variant)+frame*.3)))/h**tilt
+                        elif family==5: weight=(1 if abs(h-(3+variant*2+frame*2))<=1 else .005)/h**(.35+.1*frame)
+                        elif family==6: weight=(1 if h in (1,2+variant,5+frame,9+variant*2) else .005)/h**(.4+.1*frame)
+                        else: weight=(.02+.98*abs(math.cos(h*(1.2+.13*variant)+frame*.3)))/h**(.55+.15*frame)
                         v+=weight*math.sin(h*p+.13*frame*h+.07*variant*h)
                     values.append(v)
                 peak=max(abs(v) for v in values) or 1.
