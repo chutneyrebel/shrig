@@ -69,7 +69,7 @@ meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wavetable','position','osc1_warp_type']
+assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_warp_type']
 assert len(meta['capabilities']['chain_params'])==40
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
@@ -83,7 +83,7 @@ hierarchy=json.loads(getp('ui_hierarchy'))
 assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP legacy hierarchy differs from shipped metadata'
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
-assert any(isinstance(p,dict) and p.get('level')=='filter_env' for p in hierarchy['levels']['root']['params'])
+assert any(isinstance(p,dict) and p.get('level')=='osc2' for p in hierarchy['levels']['root']['params'])
 assert getp('module_id')=='sprig-wt'
 assert getp('attack')=='10'
 assert getp('osc2_level')=='0' and getp('lfo_depth')=='0'
