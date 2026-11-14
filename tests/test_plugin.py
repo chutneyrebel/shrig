@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==60
+assert len(meta['capabilities']['chain_params'])==61
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -535,3 +535,29 @@ for o in (1,2):
     muted=phase2_audio(o,1,100 if o==1 else 0)
     assert rms(full)>rms(muted)*4,(o,'mix balance must isolate oscillators')
 print('PASS: Phase 2 per-oscillator attack and opt-in mix balance change actual PCM')
+
+# Phase 3 filter ABI and audio regression.
+filter_modes=['LP12','HP12','BP12','Notch','Peak','Allpass','LP24','HP24']
+descriptor=next(p for p in chain_params if p['key']=='filter_type')
+assert descriptor['options']==filter_modes and descriptor['default']==0
+assert 'filter_type' in meta['capabilities']['ui_hierarchy']['levels']['filter']['knobs']
+assert getp('filter_type')=='0', 'Legacy LP12 must remain the default'
+def filter_audio(mode):
+    p=api.create(b'.',None)
+    assert p
+    for key,value in [('filter_type',mode),('cutoff',36),('resonance',20),('attack',1),('sustain',100)]:
+        api.set(p,key.encode(),str(value).encode())
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(p,note,3,0)
+    buf=(C.c_int16*256)()
+    samples=[]
+    for _ in range(30):
+        api.render(p,buf,128)
+        samples.extend(buf[::2])
+    api.destroy(p)
+    return samples
+sounds=[filter_audio(mode) for mode in range(8)]
+assert all(1<rms(s)<32000 for s in sounds),[(i,rms(s)) for i,s in enumerate(sounds)]
+assert all(sounds[i]!=sounds[0] for i in range(1,8))
+assert sounds[6]!=sounds[0] and sounds[7]!=sounds[1]
+print('PASS: eight filter modes render finite, distinguishable PCM')
