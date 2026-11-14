@@ -70,7 +70,7 @@ assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['wt_bank','wt_table'], 'Expanded oscillator controls must be visible on root Move knobs'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc']['params'][:3]==['wave','wt_bank','wt_table']
-assert len(meta['capabilities']['chain_params'])==22
+assert len(meta['capabilities']['chain_params'])==23
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -80,7 +80,7 @@ assert face['canvas_script']=='canvas.js'
 assert 'voice_activity' in face['extra_keys']
 assert getp('voice_activity')=='0'
 hierarchy=json.loads(getp('ui_hierarchy'))
-assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP hierarchy differs from shipped metadata'
+assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP legacy hierarchy differs from shipped metadata'
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
 assert any(isinstance(p,dict) and p.get('level')=='filter_env' for p in hierarchy['levels']['root']['params'])
@@ -122,15 +122,28 @@ assert rms([a-b for a,b in zip(x,y)])>100, 'Position parameter is not audible'
 setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
+# Stage 3A.3: the fourth knob is bank-sensitive when the host refreshes hierarchy.
+setp('wt_bank',1)
+expanded_hierarchy=json.loads(getp('ui_hierarchy'))
+assert expanded_hierarchy['levels']['root']['knobs'][3]=='spectral_shape'
+assert 'spectral_shape' in expanded_hierarchy['levels']['osc']['params']
+setp('spectral_shape',0)
+assert getp('spectral_shape')=='0'
+setp('spectral_shape',100)
+assert getp('spectral_shape')=='100'
+setp('spectral_shape',50)
+setp('wt_bank',0)
+assert json.loads(getp('ui_hierarchy'))['levels']['root']['knobs'][3]=='wave'
+assert getp('wave') in ('0','1','2','3')
 # Expanded bank is opt-in: old state without new keys must stay in Legacy.
-setp('wt_bank',1);setp('wt_table',31)
-assert getp('wt_bank')=='1' and getp('wt_table')=='31'
+setp('wt_bank',1);setp('wt_table',47)
+assert getp('wt_bank')=='1' and getp('wt_table')=='47'
 expanded=sample_with(1,50)
 setp('wt_bank',0)
 legacy=sample_with(1,50)
 assert rms([a-b for a,b in zip(expanded,legacy)])>100
 setp('wt_bank',1);setp('wt_table',999)
-assert getp('wt_table')=='31'
+assert getp('wt_table')=='47'
 setp('wt_bank',0);setp('wt_table',0)
 assert getp('wt_bank')=='0'
 # Round-trip presets and clamp out-of-range writes.
