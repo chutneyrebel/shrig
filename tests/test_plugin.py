@@ -110,6 +110,19 @@ for i in cores:
         if i>=j:continue
         assert max(spectral_distance(cores[i][f],cores[j][f]) for f in (0,3))>.22,(i,j,'core timbres too similar')
 print('PASS: eight core tables exhibit position evolution and pairwise spectral distinction')
+# Prevent pairs from collapsing to the same timbre at intermediate positions.
+# A max-over-endpoints check alone can hide identical middle frames.
+for i in cores:
+    for j in cores:
+        if i>=j:continue
+        distances=[spectral_distance(cores[i][f],cores[j][f]) for f in range(4)]
+        assert min(distances)>.08,(i,j,'core pair overlaps at a frame',distances)
+# Each curated table must offer at least two meaningfully distinct transitions.
+for i,frames in cores.items():
+    transitions=[spectral_distance(frames[f],frames[f+1]) for f in range(3)]
+    assert sum(d>.08 for d in transitions)>=2,(i,'insufficient multi-frame evolution',transitions)
+print('PASS: curated core pairs remain distinct across all four frames')
+
 # Remote curated discovery keeps the full numeric ID range for preset recall.
 remote=(ROOT/'src/web_ui.html').read_text()
 assert 'const curatedWaves=[' in remote and 'curatedIds' in remote
