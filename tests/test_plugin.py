@@ -109,7 +109,7 @@ assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['w
 assert len(meta['capabilities']['chain_params'])==40
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
-assert chain_params==meta['capabilities']['chain_params']
+assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
 warp_labels=['Off','Sync','Bend+','Bend-','PWM','Asym','Mirror','Quant']
 for key in ('osc1_warp_type','osc2_warp_type'):
     info=next(p for p in chain_params if p['key']==key)
@@ -119,7 +119,6 @@ assert "const warpNames=['Off','Sync','Bend+','Bend−','PWM','Asym','Mirror','Q
 assert "['osc1_warp_type','OSC 1 Warp Type'" in remote_ui
 assert "['osc2_warp_type','OSC 2 Warp Type'" in remote_ui
 print('PASS: native and remote UI expose eight named warp modes')
-, 'DSP and packaged chain_params drifted'
 face=next((p for p in chain_params if p.get('key')=='face'), None)
 assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
 assert face['canvas_script']=='canvas.js'
