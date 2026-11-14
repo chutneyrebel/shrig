@@ -38,7 +38,19 @@
       else if(family===8)weight=([1,3+variant,8+Math.round(frame)*3,17+variant*4].includes(h)?1:.002)/Math.pow(h,.3);
       else if(family===9)weight=(h%2===0?1:.01)*Math.abs(Math.sin(h*(.3+.1*variant)+frame*.5))/Math.pow(h,.5+.1*frame);
       else if(family===10)weight=(h%(5+variant)===1?1:.005)/Math.pow(h,.3+.2*frame);
-      else weight=([1,6+variant*2,13+Math.round(frame)*3,23+variant*3].includes(h)?1:.003)/Math.pow(h,.3+.15*frame);
+      else if(family===11)weight=([1,6+variant*2,13+Math.round(frame)*3,23+variant*3].includes(h)?1:.003)/Math.pow(h,.3+.15*frame);
+      else if(family===12)weight=Math.exp(-Math.pow((h-(4+variant*3+frame*4))/(2+variant),2))+.02/h;
+      else if(family===13)weight=.8*Math.exp(-Math.pow((h-(3+variant+frame*2))/2,2))+.7*Math.exp(-Math.pow((h-(14+variant*4-frame))/4,2))+.02/h;
+      else if(family===14)weight=(Math.abs(h-(5+variant*2+frame*3))<3?.02:1)/Math.pow(h,.55+.12*variant);
+      else if(family===15)weight=([1,4+variant,11+Math.round(frame)*2,22+variant*3].includes(h)?1:.002)/Math.pow(h,.18+.08*frame);
+      else if(family===16)weight=(.1+.9*Math.abs(Math.sin(h*h*(.13+.02*variant)+frame*.7)))/Math.pow(h,.65+.1*frame);
+      else if(family===17)weight=((h+Math.round(frame))%(3+variant)===0?1:.015)/Math.pow(h,.25+.16*frame);
+      else if(family===18)weight=(.02+.98*Math.pow(Math.abs(Math.cos(h*(.24+.09*variant)+frame*.9)),4))/Math.pow(h,.5+.1*variant);
+      else if(family===19)weight=([1,2,3+variant*2,20+Math.round(frame)*5].includes(h)?1:.003)/Math.pow(h,.3+.1*frame);
+      else if(family===20)weight=Math.exp(-Math.pow((h-(9+variant*4-frame*2))/(3+frame),2))+.05/h;
+      else if(family===21)weight=(h%(4+variant)===Math.round(frame)%(4+variant)?.02:1)/Math.pow(h,.7+.1*frame);
+      else if(family===22)weight=(.1+.9*Math.abs(Math.sin(h*(1.9+.2*variant)+frame*.6)))/Math.pow(h,.2+.15*frame);
+      else weight=([1,7+Math.round(frame)*3,16+variant*4,35-Math.round(frame)*4].includes(h)?1:.001)/Math.pow(h,.2+.1*variant);
       sum+=weight*Math.sin(h*phase*6.28318530718+.13*frame*h+.07*variant*h);
       norm+=weight;
     }
@@ -75,7 +87,7 @@
     const v=o&&o.values||{},W=ctx.width||128,H=ctx.height||40;
     if(W<32||H<18)return;
     const second=which==='osc2';
-    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,51)|0;
+    const selected=bounded(value(v,second?'osc2_wavetable':'wavetable',1),1,0,99)|0;
     const pos=bounded(value(v,second?'osc2_position':'position',50),50,0,100)/100;
     const shape=bounded(value(v,'shape',50),50,0,100);
     const wave=Math.min(3,selected),bank=selected>=4?1:0,table=Math.max(0,selected-4);
@@ -111,7 +123,7 @@
       const v=o && o.values || {};
       const W=ctx.width||128,H=ctx.height||40;
       if(W<32||H<18)return;
-      const selected=bounded(value(v,"wavetable",1),1,0,51)|0;
+      const selected=bounded(value(v,"wavetable",1),1,0,99)|0;
       const wave=Math.min(3,selected);
       const bank=selected>=4?1:0;
       const table=Math.max(0,selected-4);
