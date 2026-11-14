@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "tables.h"
+#include "wavetable_engine.h"
 
 #define SPRIG_VOICES 8
 #define SPRIG_INSTANCES 8
@@ -239,10 +240,8 @@ static float env_next(Synth *s,Voice *v){
     return v->env;
 }
 static float lookup(int wave,int frame,int band,float phase){
-    int i=(int)phase & TABLE_MASK;
-    float t=phase-(float)((int)phase);
-    const float *row=sprig_wavetables[wave][frame][band];
-    float a=row[i],b=row[(i+1)&TABLE_MASK];return a+(b-a)*t;
+    /* Legacy bank remains sample-for-sample identical to v0.2. */
+    return sprig_table_lookup_legacy(wave,frame,band,phase);
 }
 static float sample_wave(Voice *v,float wave,float pos){
     int w0=(int)wave; int w1=w0<3?w0+1:3;
