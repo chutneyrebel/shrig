@@ -128,3 +128,22 @@ assert.equal(wtLfoTrace(0,1000),wtLfoTrace(0,1700));
 assert.equal(wtLfoTrace(100,1000,0),wtLfoTrace(100,1700,0));
 assert.notEqual(wtLfoTrace(100,1000),wtLfoTrace(100,1700));
 console.log('PASS: dedicated WT LFO animates physical waveform only while sounding');
+
+// All curated IDs must render on both oscillator faces across WT positions.
+// This catches partial fixes where the main face works but OSC2 is still clamped.
+for(const face of ['main','osc1','osc2']){
+  for(const position of [0,33,67,100]){
+    const traces=[];
+    for(let id=100;id<=107;id++){
+      const lines=[];
+      const draw=face==='main'?overlay.drawPage:sandbox.globalThis.sprig_faces[face];
+      draw({...ctx,line(...args){lines.push(args);}}, {
+        nowMs:1000,values:{wavetable:id,osc2_wavetable:id,position,osc2_position:position,lfo_depth:0,lfo_wt_depth:0,voice_activity:0}
+      });
+      assert(lines.length>30,face+' failed to render '+id+' at '+position);
+      traces.push(JSON.stringify(lines));
+    }
+    assert.equal(new Set(traces).size,8,face+' has indistinguishable curated traces at '+position);
+  }
+}
+console.log('PASS: all eight curated waveforms render distinctly on main, OSC1 and OSC2 at four positions');
