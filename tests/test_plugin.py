@@ -463,9 +463,11 @@ for pan,quiet_side in ((0,1),(100,0)):
     assert probe
     for key,val in [('wavetable',1),('osc1_pan',50),('osc1_volume',100),('osc2_volume',0),('master_pan',pan)]:
         api.set(probe,key.encode(),str(val).encode())
+    buffer=(C.c_int16*256)()
+    # The output pan uses one-pole smoothing; start playback after its ramp.
+    for _ in range(40):api.render(probe,buffer,128)
     note=(C.c_uint8*3)(0x90,60,110)
     api.midi(probe,note,3,0)
-    buffer=(C.c_int16*256)()
     energy=[0,0]
     for _ in range(32):
         api.render(probe,buffer,128)
