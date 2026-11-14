@@ -70,7 +70,7 @@
         let a=0,shift=0;
         if(core===0)a=(1-t)*(h===1?.98:0)+t*(h===2?.75:h===3?.4:0);
         else if(core===1)a=Math.pow(h,-(1.15-.65*t))*(f===0?1:f===1?(h%2?1:.05):f===2?(h%3===1?1:.03):1);
-        else if(core===2){a=(h%2?1:0)/Math.pow(h,.9-.45*t);if(f>=2&&h<5)a*=.05;}
+        else if(core===2){a=(h%2?1:0)/Math.pow(h,.9-.45*t);if(f<=1&&h>=7)a*=.12;if(f>=2&&h<7)a*=.015;}
         else if(core===3)a=.03/h+.95*bell(3+10*t,1.6)+.8*bell(19-10*t,2.4);
         else if(core===4){a=.25*bell(1,.42)+bell(7+f*3,.42)+.8*bell(19+f*4,.42)+.5*bell(37-f*2,.42);shift=h*h*.17;}
         else if(core===5){a=.2*bell(2,1.2)+bell(8+f*5,1.2)+.9*bell(27-f*4,1.2)+.7*bell(43-f*3,1.2);shift=h*h*(.23+.12*t);}
