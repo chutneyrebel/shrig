@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build dist
 python3 scripts/generate_tables.py
+python3 scripts/generate_expanded_tables.py
 CC="${CC:-clang}"
 "$CC" --target=aarch64-linux-gnu -ffreestanding -nostdinc \
     -isystem "$($CC -print-resource-dir)/include" \
