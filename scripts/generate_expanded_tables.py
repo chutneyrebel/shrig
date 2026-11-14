@@ -53,6 +53,12 @@ with DEST.open('w') as f:
                         else: weight=(1 if h in (1,7+frame*3,16+variant*4,35-frame*4) else .001)/h**(.2+.1*variant)
                         v+=weight*math.sin(h*p+.13*frame*h+.07*variant*h)
                     values.append(v)
+                # Preserve the 48 established expanded waves bit-for-bit.
+                # For new waves, remove numerical DC and apply conservative
+                # peak normalization to prevent morph-frame loudness spikes.
+                if wave >= 48:
+                    dc=sum(values)/N
+                    values=[v-dc for v in values]
                 peak=max(abs(v) for v in values) or 1.
                 f.write('{'+','.join(f'{.87*v/peak:.7f}f' for v in values)+'},\n')
             f.write('},\n')
