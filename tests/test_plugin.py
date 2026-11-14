@@ -53,7 +53,7 @@ def render(n=1):
     for _ in range(n):
         api.render(inst,buf,128)
         out.extend(buf[::2])
-        assert list(buf[0::2])==list(buf[1::2])
+        # Stereo channels may differ when either oscillator is panned.
     return out
 
 def rms(seq):return math.sqrt(sum(x*x for x in seq)/len(seq))
@@ -155,6 +155,40 @@ assert getp('voice_activity')=='8'
 for n in range(48,72):midi(0x80,n,0)
 render(200)
 assert getp('voice_activity')=='0'
+# Stereo pan and OSC 2 motion regression checks.
+def stereo_with(pan1,pan2,depth=0):
+    midi(0xB0,123,0);render(140)
+    setp('osc1_volume',100);setp('osc2_volume',100)
+    setp('osc2_level',0);setp('osc1_pan',pan1);setp('osc2_pan',pan2)
+    setp('lfo_depth',depth);setp('osc2_wavetable',20)
+    midi(0x90,60,110)
+    buf=(C.c_int16*256)()
+    left=[];right=[]
+    for _ in range(50):
+        api.render(inst,buf,128)
+        left.extend(buf[0::2]);right.extend(buf[1::2])
+    midi(0x80,60,0);render(140)
+    return left,right
+left,right=stereo_with(0,0)
+assert rms(left)>100 and rms(right)<2, 'Full left pan must silence right channel'
+left,right=stereo_with(100,100)
+assert rms(right)>100 and rms(left)<2, 'Full right pan must silence left channel'
+left,right=stereo_with(50,50)
+assert rms(left)>100 and left==right, 'Center pan must be symmetric'
+setp('osc1_volume',0);setp('osc2_volume',100)
+setp('osc1_pan',50);setp('osc2_pan',50)
+def osc2_motion(depth):
+    midi(0xB0,123,0);render(140)
+    setp('lfo_depth',depth)
+    midi(0x90,60,110)
+    x=render(100)
+    midi(0x80,60,0);render(140)
+    return x
+motion_off=osc2_motion(0)
+motion_on=osc2_motion(90)
+assert rms([a-b for a,b in zip(motion_off,motion_on)])>10, 'OSC2 must respond to motion'
+setp('lfo_depth',0)
+print('PASS: independent stereo pan and OSC2 wavetable motion')
 # Instance limit and isolation.
 insts=[api.create(b'.',None) for _ in range(7)]
 assert all(insts) and not api.create(b'.',None)
