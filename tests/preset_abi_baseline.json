@@ -1,0 +1,284 @@
+{
+  "schema": 1,
+  "module_id": "sprig-wt",
+  "parameters": {
+    "wavetable": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 107
+    },
+    "shape": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "wave": {
+      "type": "enum",
+      "default": 1,
+      "options": [
+        "Sine",
+        "Saw",
+        "Square",
+        "Triangle"
+      ]
+    },
+    "wt_bank": {
+      "type": "enum",
+      "default": 0,
+      "options": [
+        "Legacy",
+        "Expanded"
+      ]
+    },
+    "wt_table": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 95
+    },
+    "spectral_shape": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "bank_select": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 95
+    },
+    "bank_shape": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "legacy_shape": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "position": {
+      "type": "float",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "cutoff": {
+      "type": "float",
+      "default": 78,
+      "min": 0,
+      "max": 100
+    },
+    "resonance": {
+      "type": "float",
+      "default": 15,
+      "min": 0,
+      "max": 100
+    },
+    "attack": {
+      "type": "float",
+      "default": 10,
+      "min": 0,
+      "max": 2000
+    },
+    "decay": {
+      "type": "float",
+      "default": 230,
+      "min": 0,
+      "max": 2000
+    },
+    "sustain": {
+      "type": "float",
+      "default": 72,
+      "min": 0,
+      "max": 100
+    },
+    "release": {
+      "type": "float",
+      "default": 240,
+      "min": 0,
+      "max": 2000
+    },
+    "level": {
+      "type": "float",
+      "default": 65,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_level": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "detune": {
+      "type": "float",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "lfo_rate": {
+      "type": "float",
+      "default": 22,
+      "min": 0,
+      "max": 100
+    },
+    "lfo_depth": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "lfo_wt_depth": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "drive": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "filter_env_amt": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "filter_env_attack": {
+      "type": "float",
+      "default": 5,
+      "min": 0,
+      "max": 2000
+    },
+    "filter_env_decay": {
+      "type": "float",
+      "default": 400,
+      "min": 0,
+      "max": 2000
+    },
+    "lfo_filter": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "osc1_warp_type": {
+      "type": "enum",
+      "default": 0,
+      "options": [
+        "Off",
+        "Sync",
+        "Bend+",
+        "Bend-",
+        "PWM",
+        "Asym",
+        "Mirror",
+        "Quant"
+      ]
+    },
+    "osc1_warp": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "osc1_detune": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "osc1_pan": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "osc1_volume": {
+      "type": "int",
+      "default": 100,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_wavetable": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 107
+    },
+    "osc2_position": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_warp_type": {
+      "type": "enum",
+      "default": 0,
+      "options": [
+        "Off",
+        "Sync",
+        "Bend+",
+        "Bend-",
+        "PWM",
+        "Asym",
+        "Mirror",
+        "Quant"
+      ]
+    },
+    "osc2_warp": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_detune": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_pan": {
+      "type": "int",
+      "default": 50,
+      "min": 0,
+      "max": 100
+    },
+    "osc2_volume": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100
+    },
+    "osc1_octave": {
+      "type": "enum",
+      "default": 2,
+      "options": [
+        "-2",
+        "-1",
+        "0",
+        "+1",
+        "+2"
+      ]
+    },
+    "osc2_octave": {
+      "type": "enum",
+      "default": 2,
+      "options": [
+        "-2",
+        "-1",
+        "0",
+        "+1",
+        "+2"
+      ]
+    }
+  }
+}

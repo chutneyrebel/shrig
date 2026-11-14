@@ -11,6 +11,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+subprocess.run(['python3', str(ROOT/'scripts/generate_metadata.py'), '--check'],check=True)
 assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Sprig WT metadata exceeds 8 KB'
 BUILD = ROOT / 'build'
 BUILD.mkdir(exist_ok=True)
@@ -149,19 +150,21 @@ assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] 
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['wavetable','position','osc1_octave']
 assert len(meta['capabilities']['chain_params'])==46
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
-# Native pages must be registered in BOTH the chain ABI and the root hierarchy.
-# Schwung's page planner only recognizes as_page canvas parameters declared in chain_params.
-expected_faces=[('face',None),('face_osc1','sprig_osc1'),('face_osc2','sprig_osc2'),('face_filter','sprig_filter')]
-root_pages=meta['capabilities']['ui_hierarchy']['levels']['root']['params'][:4]
-assert [p['key'] if isinstance(p,dict) else p for p in root_pages]==[key for key,_ in expected_faces], 'Native page order or root registration drift'
-for key,overlay in expected_faces:
+# Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
+expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
+for key,overlay,home in expected_faces:
     entry=next(p for p in meta['capabilities']['chain_params'] if p['key']==key)
-    assert entry['type']=='canvas' and entry.get('as_page') is True, (key,'not a Schwung native page')
-    assert entry['canvas_script']=='canvas.js', (key,'canvas script missing')
-    if overlay:
-        assert entry.get('canvas_overlay')==overlay, (key,'wrong overlay')
+    assert entry['type']=='canvas' and entry.get('as_page') is True
+    assert entry['canvas_script']=='canvas.js' and entry.get('canvas_overlay')==overlay
+    assert entry.get('page_first') is True
+    assert len(entry.get('extra_keys',[]))<=4
+    slots=meta['capabilities']['ui_hierarchy']['levels'][home]['params']
+    assert key in [x if isinstance(x,str) else x.get('key') for x in slots]
+    assert len(meta['capabilities']['ui_hierarchy']['levels'][home]['knobs'])<=8
+for key in ('face_osc1','face_osc2','face_filter'):
+    assert key not in meta['capabilities']['ui_hierarchy']['levels']['root']['params']
 assert len(set(p['key'] for p in meta['capabilities']['chain_params']))==len(meta['capabilities']['chain_params']), 'Duplicate chain parameter keys'
-print('PASS: four distinct native canvas pages registered in Schwung root and chain ABI')
+print('PASS: four native canvas pages each have a dedicated Schwung encoder level')
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
