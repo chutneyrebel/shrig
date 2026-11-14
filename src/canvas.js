@@ -133,7 +133,7 @@
     const shape=bounded(value(v,'shape',50),50,0,100);
     const wave=Math.min(3,selected),bank=selected>=4?1:0,table=Math.max(0,selected-4);
     const voices=bounded(value(v,'voice_activity',0),0,0,8);
-    const motion=bounded(value(v,'lfo_depth',0),0,0,100);
+    const motion=bounded(value(v,'lfo_depth',0),0,0,100)+bounded(value(v,'lfo_wt_depth',0),0,0,100);
     const rate=bounded(value(v,'lfo_rate',22),22,0,100);
     const seconds=Number.isFinite(o&&o.nowMs)?o.nowMs/1000:frame/30;
     const drift=voices>0?motion*.0012*Math.sin(seconds*(.06+.12*rate)*6.28318530718):0;
@@ -172,7 +172,7 @@
       const legacyShape=shape;
       const pos=bounded(value(v,"position",50),50,0,100)/100;
       const cut=bounded(value(v,"cutoff",78),78,0,100);
-      const motion=bounded(value(v,"lfo_depth",0),0,0,100);
+      const motion=bounded(value(v,"lfo_depth",0),0,0,100)+bounded(value(v,"lfo_wt_depth",0),0,0,100);
       const env=bounded(value(v,"filter_env_amt",0),0,0,100);
       const mix=bounded(value(v,"osc2_level",0),0,0,100);
       const rate=bounded(value(v,"lfo_rate",22),22,0,100);
