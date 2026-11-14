@@ -19,6 +19,6 @@ if readelf -d build/dsp.so | grep -q NEEDED; then
 fi
 rm -rf dist/sprig-wt
 mkdir -p dist/sprig-wt
-cp build/dsp.so src/module.json dist/sprig-wt/
+cp build/dsp.so src/module.json src/web_ui.html dist/sprig-wt/
 tar -C dist -czf dist/sprig-wt-module.tar.gz sprig-wt
 printf 'Built: %s\n' "$(realpath dist/sprig-wt-module.tar.gz)"
