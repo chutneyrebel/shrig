@@ -30,4 +30,13 @@ overlay.drawPage(ctx, {values:{wave:2,position:68,cutoff:30,lfo_depth:45,filter_
 assert(count>25);
 overlay.drawPage(ctx, {values:{}});
 overlay.drawPage({ ...ctx, width: 25, height: 12 }, { values:{} });
+// Modulation must visibly change the trace over time, while zero depth stays still.
+function waveformLines(depth, nowMs) {
+  const lines=[];
+  overlay.drawPage({...ctx, line(...args){lines.push(args);}}, {nowMs, values:{wave:1,position:50,cutoff:40,lfo_depth:depth,lfo_rate:25}});
+  return JSON.stringify(lines);
+}
+assert.equal(waveformLines(0,1000),waveformLines(0,1700));
+assert.notEqual(waveformLines(80,1000),waveformLines(80,1700));
+console.log('PASS: idle waveform stable; modulation produces time-dependent motion');
 console.log('PASS: canvas overlay loads and draws on the 128x64 hardware page contract');
