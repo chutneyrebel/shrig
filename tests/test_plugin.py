@@ -226,6 +226,22 @@ classic=sample_with(1,50)
 setp('wavetable',88)
 spectral=sample_with(1,50)
 assert rms([a-b for a,b in zip(classic,spectral)])>100, 'Unified table selector must change audio'
+# Preserve curated oscillator IDs, morph positions and opt-in modulation in presets.
+# Exercise both oscillators and restore the original state before legacy tests.
+before_curated=getp('state')
+for first,second in ((100,107),(104,105),(106,102)):
+    setp('wavetable',first);setp('osc2_wavetable',second)
+    setp('position',17);setp('osc2_position',83)
+    setp('lfo_wt_depth',42)
+    saved=getp('state')
+    setp('wavetable',1);setp('osc2_wavetable',1)
+    setp('position',50);setp('osc2_position',50)
+    setp('lfo_wt_depth',0)
+    setp('state',saved)
+    for key,expected in [('wavetable',first),('osc2_wavetable',second),('position',17),('osc2_position',83),('lfo_wt_depth',42)]:
+        assert abs(float(getp(key))-expected)<.01,(key,expected,getp(key))
+setp('state',before_curated)
+print('PASS: curated oscillator IDs, morph positions and WT LFO survive preset round trips')
 # Round-trip presets and clamp out-of-range writes.
 setp('attack',112);setp('cutoff',35);setp('level',70)
 state=getp('state')
