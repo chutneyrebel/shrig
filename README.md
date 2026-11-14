@@ -97,3 +97,8 @@ New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, 
 ### Categorized wavetable browsing (v0.2.1)
 
 The Schwung remote HTML interface now provides **independent category pickers for OSC 1 and OSC 2**, alongside each oscillator's continuous wavetable ID slider. Categories are **Classic (0–3)**, **Original Spectral (4–51)**, **Organic / Atmospheric (52–67)**, **Industrial / Metallic (68–83)** and **Vocal / Formant (84–99)**. Choosing a category selects its first waveform; the slider then explores individual waveforms. The category picker follows parameter changes. IDs remain stable for presets. These are sound-design groupings of generated spectral recipes, not imported recordings. Physical Move category browsing and four native canvas page registration remain to be implemented and verified; do not mistake remote HTML grouping for native hardware navigation.
+
+
+### Oscillator pitch and detune display (development)
+
+OSC 1 and OSC 2 each expose a five-position octave selector (-2/-1/0/+1/+2; neutral index 2) with independent phase increments, plus their existing fine-detune controls. The native Synth Face now adds a dotted secondary trace during active notes when OSC 2 is audible and the two detune settings differ; the relative phase drift is derived from the detune difference. It is an illustrative visualization, not an audio oscilloscope. The warp engine is unchanged. The existing generated wavetable bank is also unchanged in this increment; deeper spectral diversity and the four independent native canvas pages remain separate follow-up tasks.
