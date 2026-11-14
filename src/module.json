@@ -2,8 +2,8 @@
   "id": "sprig-wt",
   "name": "Sprig WT",
   "abbrev": "SPRIG",
-  "version": "0.1.0",
-  "description": "Original lightweight polyphonic wavetable synthesizer for Schwung on Move; inspired by Shrub's workflow, not its proprietary DSP.",
+  "version": "0.2.0",
+  "description": "Move-native polyphonic wavetable synth with twin oscillators, scanning LFO, filter and drive; independent Shrub-inspired design.",
   "author": "Shrook / independent prototype",
   "api_version": 2,
   "dsp": "dsp.so",
@@ -15,27 +15,261 @@
     "chainable": true,
     "component_type": "sound_generator",
     "chain_params": [
-      {"key":"wave", "name":"Wave", "type":"enum", "options":["Sine","Saw","Square","Triangle"], "default":1},
-      {"key":"position", "name":"WT Position", "type":"float", "min":0,"max":100,"step":1,"default":50,"display_format":"%.0f"},
-      {"key":"cutoff", "name":"Cutoff", "type":"float", "min":0,"max":100,"step":1,"default":78,"display_format":"%.0f"},
-      {"key":"resonance", "name":"Resonance", "type":"float", "min":0,"max":100,"step":1,"default":15,"display_format":"%.0f"},
-      {"key":"attack", "name":"Attack", "type":"float", "min":0,"max":2000,"step":1,"default":10,"unit":"ms","display_format":"%.0f"},
-      {"key":"decay", "name":"Decay", "type":"float", "min":0,"max":2000,"step":1,"default":230,"unit":"ms","display_format":"%.0f"},
-      {"key":"sustain", "name":"Sustain", "type":"float", "min":0,"max":100,"step":1,"default":72,"display_format":"%.0f"},
-      {"key":"release", "name":"Release", "type":"float", "min":0,"max":2000,"step":1,"default":240,"unit":"ms","display_format":"%.0f"},
-      {"key":"level", "name":"Output Level", "type":"float", "min":0,"max":100,"step":1,"default":65,"display_format":"%.0f"}
+      {
+        "key": "wave",
+        "name": "Wave",
+        "type": "enum",
+        "options": [
+          "Sine",
+          "Saw",
+          "Square",
+          "Triangle"
+        ],
+        "default": 1
+      },
+      {
+        "key": "position",
+        "name": "WT Position",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 50,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "cutoff",
+        "name": "Cutoff",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 78,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "resonance",
+        "name": "Resonance",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 15,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "attack",
+        "name": "Attack",
+        "type": "float",
+        "min": 0,
+        "max": 2000,
+        "step": 1,
+        "default": 10,
+        "unit": "ms",
+        "display_format": "%.0f"
+      },
+      {
+        "key": "decay",
+        "name": "Decay",
+        "type": "float",
+        "min": 0,
+        "max": 2000,
+        "step": 1,
+        "default": 230,
+        "unit": "ms",
+        "display_format": "%.0f"
+      },
+      {
+        "key": "sustain",
+        "name": "Sustain",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 72,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "release",
+        "name": "Release",
+        "type": "float",
+        "min": 0,
+        "max": 2000,
+        "step": 1,
+        "default": 240,
+        "unit": "ms",
+        "display_format": "%.0f"
+      },
+      {
+        "key": "level",
+        "name": "Output Level",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 65,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "osc2_level",
+        "name": "Osc 2 Mix",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "detune",
+        "name": "Osc 2 Detune",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 50,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "lfo_rate",
+        "name": "Motion Rate",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 22,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "lfo_depth",
+        "name": "Motion Depth",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0,
+        "display_format": "%.0f"
+      },
+      {
+        "key": "drive",
+        "name": "Drive",
+        "type": "float",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0,
+        "display_format": "%.0f"
+      }
     ],
     "ui_hierarchy": {
       "levels": {
         "root": {
-          "label":"Sprig WT",
-          "knobs":["wave","position","cutoff","resonance","attack","decay","sustain","release"],
-          "params":["wave","position","cutoff","resonance","attack","decay","sustain","release",{"level":"output","label":"Output"}]
+          "label": "Sprig WT",
+          "knobs": [
+            "wave",
+            "position",
+            "osc2_level",
+            "detune",
+            "cutoff",
+            "resonance",
+            "lfo_depth",
+            "level"
+          ],
+          "params": [
+            "wave",
+            "position",
+            "osc2_level",
+            "detune",
+            "cutoff",
+            "resonance",
+            "lfo_depth",
+            "level",
+            {
+              "level": "osc",
+              "label": "Oscillators"
+            },
+            {
+              "level": "filter",
+              "label": "Filter + Color"
+            },
+            {
+              "level": "motion",
+              "label": "Motion"
+            },
+            {
+              "level": "amp",
+              "label": "Amp Envelope"
+            },
+            {
+              "level": "output",
+              "label": "Output"
+            }
+          ]
+        },
+        "osc": {
+          "label": "Oscillators",
+          "knobs": [
+            "wave",
+            "position",
+            "osc2_level",
+            "detune"
+          ],
+          "params": [
+            "wave",
+            "position",
+            "osc2_level",
+            "detune"
+          ]
+        },
+        "filter": {
+          "label": "Filter + Color",
+          "knobs": [
+            "cutoff",
+            "resonance",
+            "drive"
+          ],
+          "params": [
+            "cutoff",
+            "resonance",
+            "drive"
+          ]
+        },
+        "motion": {
+          "label": "Motion",
+          "knobs": [
+            "lfo_rate",
+            "lfo_depth",
+            "position"
+          ],
+          "params": [
+            "lfo_rate",
+            "lfo_depth",
+            "position"
+          ]
+        },
+        "amp": {
+          "label": "Amp Envelope",
+          "knobs": [
+            "attack",
+            "decay",
+            "sustain",
+            "release"
+          ],
+          "params": [
+            "attack",
+            "decay",
+            "sustain",
+            "release"
+          ]
         },
         "output": {
-          "label":"Output",
-          "knobs":["level"],
-          "params":["level"]
+          "label": "Output",
+          "knobs": [
+            "level"
+          ],
+          "params": [
+            "level"
+          ]
         }
       }
     }
