@@ -72,3 +72,8 @@ MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton,
 ### v0.2.1 warp regression coverage
 
 The host audio suite now checks Off plus all seven active warp modes separately on OSC 1 and OSC 2. For each active mode it compares a fresh-instance reference against zero amount (must be sample-identical) and strong warp (must audibly alter the PCM signal). This is automated audio verification, not yet confirmation of on-device control feel or perceived musical quality.
+
+
+### Four-face native UI development (not yet hardware-ready)
+
+`src/canvas.js` now contains distinct MAIN, OSC 1, OSC 2 and FILTER drawing functions, with host-side tests for unique traces and meters. The current Schwung metadata still registers only one native canvas page. The four renderers are **not yet four hardware jog-wheel pages**: separate `as_page` declarations and host-compatible overlay selection remain to be wired and tested before the consolidated v0.2.1 hardware test. The FILTER graphic is an illustrative low-pass response, not a measured DSP frequency response; the audio filter remains low-pass only.
