@@ -32,7 +32,7 @@ typedef struct plugin_api_v2 {
 
 typedef struct {
     float phase, phase2, increment, env, vel, release_step;
-    float ic1, ic2, ic1_r, ic2_r, filter_env, smooth_cut;
+    float ic1, ic2, ic1_r, ic2_r, ic3, ic4, ic3_r, ic4_r, filter_env, smooth_cut;
     float oe[2],ors[2];uint8_t os[2];uint8_t filter_stage;
     unsigned age;
     uint8_t note, band, stage, down;
@@ -43,7 +43,7 @@ typedef struct {
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
-    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan;
+    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type;
 int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
     float lfo_phase;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
@@ -158,7 +158,7 @@ static const Param params[]={
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
-    P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100)
+    P(filter_type,7),P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -222,7 +222,7 @@ static int get_param(void *instance,const char *key,char *buf,int len){
             s->osc2_warp,s->osc2_detune,s->osc2_pan,s->osc2_volume,
             s->shape,s->lfo_rate,s->lfo_depth,s->lfo_wt_depth,
             s->cutoff,s->resonance,s->drive,s->filter_env_amt,
-            s->lfo_filter,s->master_pan
+            s->lfo_filter,s->master_pan,s->filter_type
         };
         int at=0,active=0;
         for(int i=0;i<SPRIG_VOICES;i++)if(s->voices[i].stage)active++;
@@ -265,7 +265,7 @@ static float env_next(Synth *s,Voice *v){
         case SUSTAIN:v->env=sus;break;
         case RELEASE:
             v->env-=v->release_step;
-            if(v->env<=0.f){v->env=0.f;if(!(s->osc1_env_enabled&&v->os[0])&&!(s->osc2_env_enabled&&v->os[1]))v->stage=0;v->ic1=0;v->ic2=0;v->ic1_r=0;v->ic2_r=0;}break;
+            if(v->env<=0.f){v->env=0.f;if(!(s->osc1_env_enabled&&v->os[0])&&!(s->osc2_env_enabled&&v->os[1]))v->stage=0;v->ic1=0;v->ic2=0;v->ic1_r=0;v->ic2_r=0;v->ic3=0;v->ic4=0;v->ic3_r=0;v->ic4_r=0;}break;
         default:return 0;
     }
     return v->env;
@@ -410,8 +410,30 @@ static void render_block(void *instance,int16_t *out,int frames){
             float v2r=v->ic2_r+a2*v->ic1_r+a3*v3r;
             v->ic1_r=2*v1r-v->ic1_r;
             v->ic2_r=2*v2r-v->ic2_r;
-            sumL+=v2*(newmode?1.f:env)*v->vel;
-            sumR+=v2r*(newmode?1.f:env)*v->vel;
+            /* Preserve the exact historical LP12 output for filter_type=0. */
+            float hp=left-k*v1-v2,hpr=right-k*v1r-v2r;
+            float filtered=v2,filteredR=v2r;
+            switch(s->filter_type){
+              case 1:filtered=hp;filteredR=hpr;break;             /* HP12 */
+              case 2:filtered=v1;filteredR=v1r;break;           /* BP12 */
+              case 3:filtered=hp+v2;filteredR=hpr+v2r;break;   /* Notch */
+              case 4:filtered=v2-hp;filteredR=v2r-hpr;break;   /* Peak */
+              case 5:filtered=hp+v2-k*v1;filteredR=hpr+v2r-k*v1r;break; /* Allpass */
+              case 6:case 7:{
+                float src=s->filter_type==6?v2:hp;
+                float srcR=s->filter_type==6?v2r:hpr;
+                float z=src-v->ic4,zz=srcR-v->ic4_r;
+                float b1=a1*v->ic3+a2*z,b2=v->ic4+a2*v->ic3+a3*z;
+                float b1r=a1*v->ic3_r+a2*zz,b2r=v->ic4_r+a2*v->ic3_r+a3*zz;
+                v->ic3=2*b1-v->ic3;v->ic4=2*b2-v->ic4;
+                v->ic3_r=2*b1r-v->ic3_r;v->ic4_r=2*b2r-v->ic4_r;
+                filtered=s->filter_type==6?b2:src-k*b1-b2;
+                filteredR=s->filter_type==6?b2r:srcR-k*b1r-b2r;
+                break;
+              }
+            }
+            sumL+=filtered*(newmode?1.f:env)*v->vel;
+            sumR+=filteredR*(newmode?1.f:env)*v->vel;
         }
         /* Conservative poly mix to prevent clipping with eight voices. */
         float pan=clampf(s->smooth_master_pan,0.f,100.f);
