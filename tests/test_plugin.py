@@ -12,6 +12,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / 'build'
 BUILD.mkdir(exist_ok=True)
+if not (ROOT/'src/expanded_tables.h').is_file():
+    subprocess.run(['python3',str(ROOT/'scripts/generate_expanded_tables.py')],check=True)
 if not (ROOT/'src/tables.h').is_file():
     subprocess.run(['python3',str(ROOT/'scripts/generate_tables.py')],check=True)
 so = BUILD / 'dsp-host.so'
@@ -66,7 +68,7 @@ assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
 assert meta['api_version']==2 and meta['id']=='sprig-wt'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
-assert len(meta['capabilities']['chain_params'])==20
+assert len(meta['capabilities']['chain_params'])==22
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -117,6 +119,17 @@ assert rms([a-b for a,b in zip(x,y)])>100, 'Position parameter is not audible'
 setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
+# Expanded bank is opt-in: old state without new keys must stay in Legacy.
+setp('wt_bank',1);setp('wt_table',31)
+assert getp('wt_bank')=='1' and getp('wt_table')=='31'
+expanded=sample_with(1,50)
+setp('wt_bank',0)
+legacy=sample_with(1,50)
+assert rms([a-b for a,b in zip(expanded,legacy)])>100
+setp('wt_bank',1);setp('wt_table',999)
+assert getp('wt_table')=='31'
+setp('wt_bank',0);setp('wt_table',0)
+assert getp('wt_bank')=='0'
 # Round-trip presets and clamp out-of-range writes.
 setp('attack',112);setp('cutoff',35);setp('level',70)
 state=getp('state')
