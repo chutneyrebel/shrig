@@ -59,3 +59,14 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
+
+      - name: Export native factory presets for optional manual installation
+        run: |
+          python3 scripts/export_native_factory.py --output-dir dist/native-factory-presets
+          test "$(find dist/native-factory-presets -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 16
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synth_esis-native-factory-presets
+          path: dist/native-factory-presets/*.json
+          if-no-files-found: error
+          retention-days: 30
