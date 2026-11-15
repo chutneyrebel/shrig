@@ -210,3 +210,16 @@ console.log('PASS: OSC1, OSC2, MAIN and FILTER native face snapshots, warp and m
 assert.notEqual(nativeLines('filter',{filter_type:0}),nativeLines('filter',{filter_type:1}),'Filter FACE must change with mode');
 assert.notEqual(nativeLines('filter',{filter_type:2}),nativeLines('filter',{filter_type:3}),'Bandpass and notch curves must differ');
 console.log('PASS: Phase 3 FILTER FACE changes response by filter type');
+
+// Phase 8: main performance HUD tracks oscillator blend, pan and note activity.
+function performancePixels(values){const pixels=[];overlay.drawPage({...ctx,fillRect(x,y,w,h,c){pixels.push([x,y,w,h,c]);}}, {nowMs:1000,values});return pixels;}
+const baseHud={wavetable:1,osc1_volume:100,osc2_volume:0,master_pan:50,voice_activity:0};
+const leftHud=performancePixels(baseHud);
+const blendedHud=performancePixels({...baseHud,osc1_volume:50,osc2_volume:50});
+const rightHud=performancePixels({...baseHud,master_pan:90});
+assert.notDeepEqual(leftHud,blendedHud,'oscillator balance must change HUD');
+assert.notDeepEqual(leftHud,rightHud,'master pan must change HUD');
+const soundingHud=performancePixels({...baseHud,voice_activity:3});
+assert(soundingHud.some(p=>p[0]>=118&&p[1]===1&&p[2]===2&&p[3]===2),'voice activity beacon missing');
+assert(!leftHud.some(p=>p[0]>=118&&p[1]===1&&p[2]===2&&p[3]===2),'idle beacon must remain off');
+console.log('PASS: Phase 8 balance, stereo position and voice-activity HUD');
