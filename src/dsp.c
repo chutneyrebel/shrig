@@ -46,6 +46,7 @@ typedef struct {
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth;
 int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
     float lfo_phase, lfo2_phase;
+    unsigned lfo_cycle, lfo2_cycle;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
     unsigned age;
     Voice voices[SPRIG_VOICES];
@@ -331,11 +332,10 @@ static int16_t pcm(float f){
 /* Phase 5 waveform engine. Index 0 retains the original sine lookup exactly.
  * Random variants use deterministic phase-derived hashes, so modulation is
  * reproducible and does not allocate memory or depend on global RNG state. */
-static float lfo_waveform_sample(int shape,float phase){
+static float lfo_waveform_sample(int shape,float phase,unsigned cycle){
     if(shape==0)return lookup(0,0,0,phase);
     float t=phase*(1.f/256.f);
-    int cycle=(int)t;
-    t-=cycle;
+
     if(shape==1)return 1.f-4.f*(t<.5f?t:1.f-t);
     if(shape==2)return 2.f*t-1.f;
     if(shape==3)return t<.5f?1.f:-1.f;
@@ -367,12 +367,12 @@ static void render_block(void *instance,int16_t *out,int frames){
         /* One global low-frequency modulator for subtle continuous wavetable motion. */
         float lfo_hz=.06f+.12f*(float)s->lfo_rate;
         s->lfo_phase+=lfo_hz*(256.f/SR);
-        if(s->lfo_phase>=256.f)s->lfo_phase-=256.f;
-        float lfo=lfo_waveform_sample(s->lfo1_waveform,s->lfo_phase);
+        if(s->lfo_phase>=256.f){s->lfo_phase-=256.f;s->lfo_cycle++;}
+        float lfo=lfo_waveform_sample(s->lfo1_waveform,s->lfo_phase,s->lfo_cycle);
         float lfo2_hz=.06f+.12f*(float)s->lfo2_rate;
         s->lfo2_phase+=lfo2_hz*(256.f/SR);
-        if(s->lfo2_phase>=256.f)s->lfo2_phase-=256.f;
-        float lfo2=lfo_waveform_sample(s->lfo2_waveform,s->lfo2_phase);
+        if(s->lfo2_phase>=256.f){s->lfo2_phase-=256.f;s->lfo2_cycle++;}
+        float lfo2=lfo_waveform_sample(s->lfo2_waveform,s->lfo2_phase,s->lfo2_cycle);
         float mod2=(.01f*(float)(s->lfo2_depth-50))*lfo2;
         float wave=clampf(s->smooth_wave,0,3);
         float mod=(.01f*(float)(s->mod_depth-50))*lfo;
