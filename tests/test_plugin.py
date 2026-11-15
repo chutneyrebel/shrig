@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host-side ABI smoke tests for Sprig WT, no Move access needed."""
+"""Host-side ABI smoke tests for Synth_esis, no Move access needed."""
 import ctypes as C
 import json
 import math
@@ -12,7 +12,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 subprocess.run(['python3', str(ROOT/'scripts/generate_metadata.py'), '--check'],check=True)
-assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Sprig WT metadata exceeds 8 KB'
+assert len((ROOT/'src/module.json').read_bytes()) < 8192, 'Synth_esis metadata exceeds 8 KB'
 BUILD = ROOT / 'build'
 BUILD.mkdir(exist_ok=True)
 if not (ROOT/'src/expanded_tables.h').is_file():
@@ -142,7 +142,7 @@ assert '#define SPRIG_LEGACY_FRAMES 4' in header
 assert '#define SPRIG_LEGACY_BANDS 9' in header
 assert 'sprig_table_lookup_legacy' in (ROOT/'src/dsp.c').read_text()
 meta=json.loads((ROOT/'src/module.json').read_text())
-assert meta['api_version']==2 and meta['id']=='sprig-wt'
+assert meta['api_version']==2 and meta['id']=='synth_esis'
 assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Schwung 8 KB metadata limit'
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
@@ -191,7 +191,7 @@ assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP legacy hierarc
 assert 'levels' in hierarchy and 'root' in hierarchy['levels']
 assert any(isinstance(p,dict) and p.get('key')=='face' and p.get('type')=='canvas' for p in hierarchy['levels']['root']['params'])
 assert any(isinstance(p,dict) and p.get('level')=='osc2' for p in hierarchy['levels']['root']['params'])
-assert getp('module_id')=='sprig-wt'
+assert getp('module_id')=='synth_esis'
 assert getp('attack')=='10'
 assert getp('osc2_level')=='0' and getp('lfo_depth')=='0'
 setp('osc2_level',42);setp('detune',73);setp('lfo_depth',28);setp('drive',25)
