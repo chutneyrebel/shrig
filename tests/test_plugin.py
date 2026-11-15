@@ -166,7 +166,7 @@ for key in ('face_osc1','face_osc2','face_filter'):
 assert len(set(p['key'] for p in meta['capabilities']['chain_params']))==len(meta['capabilities']['chain_params']), 'Duplicate chain parameter keys'
 print('PASS: four native canvas pages each have a dedicated Schwung encoder level')
 assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
-assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
+assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
