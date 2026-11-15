@@ -177,7 +177,7 @@
     return displayedWave(warped,wave,pos,bank,table,shape,shape);
   }
   function drawOscillators(ctx,v,which,seconds,active,W,H){
-    const width=W-3,height=Math.max(7,H-15);
+    const width=W-3,height=Math.max(7,H-(which==='main'?25:15));
     const vol1=bounded(value(v,'osc1_volume',100),100,0,100)/100;
     const vol2=bounded(value(v,'osc2_volume',0),0,0,100)/100;
     const scale=which==='main'?Math.max(.5,vol1+vol2):1;
@@ -231,7 +231,7 @@
       // A restrained phase-offset ghost illustrates active motion and oscillator beating.
       // Purely graphical: no claim of measured audio or spectral analysis.
       if(active){
-        const width=W-3,height=Math.max(7,H-15);
+        const width=W-3,height=Math.max(7,H-(which==='main'?25:15));
         const rate=bounded(value(v,'lfo_rate',22),22,0,100);
         const depth=bounded(value(v,'lfo_depth',0),0,0,100);
         const mix=bounded(value(v,'osc2_volume',0),0,0,100)/100;
@@ -250,6 +250,31 @@
         }
       }
       if(which==='main'){
+        // Performance HUD: osc balance and stereo position. Derived from current
+        // synth controls; no FFT or audio-meter accuracy is implied.
+        const voices=bounded(value(v,'voice_activity',0),0,0,8);
+        const a=bounded(value(v,'osc1_volume',100),100,0,100);
+        const b=bounded(value(v,'osc2_volume',0),0,0,100);
+        const total=Math.max(1,a+b);
+        const split=Math.round((W-8)*a/total);
+        const pan=bounded(value(v,'master_pan',50),50,0,100);
+        // Two dedicated HUD lanes, separated from waveform and bottom meters.
+        // Wide blocks remain legible on the physical monochrome Move display.
+        const hudY=Math.max(2,H-20),barX=3,barW=W-9;
+        const osc1W=Math.round(barW*a/total);
+        ctx.print(1,hudY-1,'1',1);
+        ctx.print(W-5,hudY-1,'2',1);
+        ctx.fillRect(barX,hudY,barW,4,0);
+        ctx.fillRect(barX,hudY,osc1W,4,1);
+        // Pan marker remains independent of oscillator balance.
+        ctx.fillRect(Math.max(barX,Math.min(barX+barW-2,barX+Math.round((barW-2)*pan/100))),hudY-2,2,8,1);
+        // Eight visible voice slots; active voices fill from left to right.
+        const voiceY=H-13;
+        for(let n=0;n<8;n++){
+          const x=5+n*15;
+          ctx.fillRect(x,voiceY,10,3,0);
+          if(n<voices)ctx.fillRect(x,voiceY,10,3,1);
+        }
         pageMeters(ctx,[['R',value(v,'lfo_rate',22)],['D',value(v,'lfo_depth',0)],['F',value(v,'lfo_filter',0)],['P',value(v,'master_pan',50)]],H,W);
       }else{
         const prefix=which==='osc2'?'osc2_':'osc1_';

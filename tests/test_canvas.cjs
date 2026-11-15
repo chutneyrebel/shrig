@@ -52,7 +52,7 @@ const vals={wave:2,position:63,osc2_level:41,detune:72,cutoff:30,resonance:25,lf
 for(let i=0;i<keys.length;i++){
   const printed=[];
   overlay.drawPage({...ctx,print(x,y,t,c){printed.push(t);}}, {keys,touched:i,values:vals,nowMs:1000});
-  assert.deepEqual(printed,['R','D','F','P'],'canvas must not repeat host parameter header');
+  assert.deepEqual(printed,['1','2','R','D','F','P'],'canvas must not repeat host parameter header');
 }
 // The new root overlay uses the shared animated dual-oscillator renderer.
 // Its secondary contour must be note-gated and respond to motion depth.
@@ -92,7 +92,7 @@ for(const name of Object.keys(faces)){
     nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50,lfo_depth:60,voice_activity:1}
   });
   assert(lines.length>30, name+' face has no trace');
-  assert.equal(labels.length,4,name+' face needs four meters');
+  assert.equal(labels.length,name==='main'?6:4,name+' face needs four meters plus optional oscillator labels');
 }
 const faceLines=(name)=>{const lines=[];faces[name]({...ctx,line(...args){lines.push(args);}},{
   nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50}
@@ -210,3 +210,16 @@ console.log('PASS: OSC1, OSC2, MAIN and FILTER native face snapshots, warp and m
 assert.notEqual(nativeLines('filter',{filter_type:0}),nativeLines('filter',{filter_type:1}),'Filter FACE must change with mode');
 assert.notEqual(nativeLines('filter',{filter_type:2}),nativeLines('filter',{filter_type:3}),'Bandpass and notch curves must differ');
 console.log('PASS: Phase 3 FILTER FACE changes response by filter type');
+
+// Phase 8: main performance HUD tracks oscillator blend, pan and note activity.
+function performancePixels(values){const pixels=[];overlay.drawPage({...ctx,fillRect(x,y,w,h,c){pixels.push([x,y,w,h,c]);}}, {nowMs:1000,values});return pixels;}
+const baseHud={wavetable:1,osc1_volume:100,osc2_volume:0,master_pan:50,voice_activity:0};
+const leftHud=performancePixels(baseHud);
+const blendedHud=performancePixels({...baseHud,osc1_volume:50,osc2_volume:50});
+const rightHud=performancePixels({...baseHud,master_pan:90});
+assert.notDeepEqual(leftHud,blendedHud,'oscillator balance must change HUD');
+assert.notDeepEqual(leftHud,rightHud,'master pan must change HUD');
+const soundingHud=performancePixels({...baseHud,voice_activity:3});
+assert(soundingHud.some(p=>p[0]===5&&p[1]===ctx.height-13&&p[2]===10&&p[3]===3&&p[4]===1),'voice activity slots missing');
+assert(!leftHud.some(p=>p[0]===5&&p[1]===ctx.height-13&&p[2]===10&&p[3]===3&&p[4]===1),'idle voice slots must remain unfilled');
+console.log('PASS: Phase 8 balance, stereo position and voice-activity HUD');
