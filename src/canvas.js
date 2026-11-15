@@ -250,6 +250,22 @@
         }
       }
       if(which==='main'){
+        // Performance HUD: osc balance and stereo position. Derived from current
+        // synth controls; no FFT or audio-meter accuracy is implied.
+        const voices=bounded(value(v,'voice_activity',0),0,0,8);
+        const a=bounded(value(v,'osc1_volume',100),100,0,100);
+        const b=bounded(value(v,'osc2_volume',0),0,0,100);
+        const total=Math.max(1,a+b);
+        const split=Math.round((W-8)*a/total);
+        const pan=bounded(value(v,'master_pan',50),50,0,100);
+        const hudY=Math.max(1,H-16);
+        ctx.fillRect(3,hudY,W-8,1,0);
+        ctx.fillRect(3,hudY,split,1,1);
+        ctx.fillRect(Math.max(3,Math.min(W-5,3+Math.round((W-8)*pan/100))),hudY-2,1,5,1);
+        if(active){
+          // Tiny voice-activity beacon, one tick per sounding voice.
+          for(let n=0;n<voices;n++)ctx.fillRect(W-3-n*3,1,2,2,1);
+        }
         pageMeters(ctx,[['R',value(v,'lfo_rate',22)],['D',value(v,'lfo_depth',0)],['F',value(v,'lfo_filter',0)],['P',value(v,'master_pan',50)]],H,W);
       }else{
         const prefix=which==='osc2'?'osc2_':'osc1_';
