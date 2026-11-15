@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==66
+assert len(meta['capabilities']['chain_params'])==68
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -648,3 +648,11 @@ for lfo,key in ((1,'lfo1_waveform'),(2,'lfo2_waveform')):
     assert (key+'=5').encode() in saved.value,key
     api.destroy(p)
 print('PASS: Phase 5 six distinct LFO waveforms, original sine default, PCM bounds and state persistence')
+
+for key in ('lfo1_waveform','lfo2_waveform'):
+    descriptor=next(p for p in chain_params if p['key']==key)
+    assert descriptor['type']=='enum' and descriptor['default']==0
+    assert descriptor['options']==['Sine','Tri','Saw','Square','S&H','Smooth']
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+print('PASS: Phase 5 waveform selectors exposed on native MOTION page')
