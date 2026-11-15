@@ -131,7 +131,7 @@
     'osc1_pan','osc1_volume','osc2_wavetable','osc2_position',
     'osc2_warp_type','osc2_warp','osc2_detune','osc2_pan','osc2_volume',
     'shape','lfo_rate','lfo_depth','lfo_wt_depth','cutoff','resonance',
-    'drive','filter_env_amt','lfo_filter','master_pan','filter_type','voice_activity'
+    'drive','filter_env_amt','lfo_filter','master_pan','filter_type','voice_activity','matrix_cutoff_lfo1','matrix_cutoff_lfo2','lfo2_rate'
   ];
   function faceValues(o){
     const initial=(o&&o.values)||{};
@@ -228,10 +228,14 @@
       // Phase 9 foundation: a voice-gated LFO filter sweep cursor.
       // This is a control-derived preview, not a DSP readback.
       const filterMotion=bounded(value(v,'lfo_filter',0),0,0,100)/100;
-      if(active && filterMotion>.01){
+      const matrix1=(bounded(value(v,'matrix_cutoff_lfo1',50),50,0,100)-50)/50;
+      const matrix2=(bounded(value(v,'matrix_cutoff_lfo2',50),50,0,100)-50)/50;
+      if(active && (filterMotion>.01 || Math.abs(matrix1)>.01 || Math.abs(matrix2)>.01)){
         const rate=bounded(value(v,'lfo_rate',22),22,0,100);
         const cycle=Math.sin(seconds*(.15+rate*.02)*6.28318530718);
-        const shifted=Math.max(0,Math.min(100,cutoff+cycle*filterMotion*32));
+        const rate2=bounded(value(v,'lfo2_rate',22),22,0,100);
+        const cycle2=Math.sin(seconds*(.15+rate2*.02)*6.28318530718);
+        const shifted=Math.max(0,Math.min(100,cutoff+cycle*(filterMotion*32+matrix1*24)+cycle2*matrix2*24));
         const cursorX=2+Math.round((W-5)*(.1+.8*shifted/100));
         ctx.fillRect(cursorX,2,2,4,1);
       }
