@@ -43,7 +43,7 @@ typedef struct {
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
-    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth, lfo1_waveform, lfo2_waveform;
+    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth, lfo1_waveform, lfo2_waveform, sync_bpm, lfo1_sync, lfo2_sync;
 int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
     float lfo_phase, lfo2_phase;
     unsigned lfo_cycle, lfo2_cycle;
@@ -95,7 +95,7 @@ static void defaults(Synth *s){
     s->osc1_warp_type=0;s->osc1_warp=0;s->osc1_detune=50;s->osc1_octave=2;s->osc1_pan=50;s->osc1_volume=100;
     s->osc2_wavetable=1;s->osc2_position=50;s->osc2_warp_type=0;s->osc2_warp=0;s->osc2_detune=50;s->osc2_octave=2;s->osc2_pan=50;s->osc2_volume=0;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->lfo_wt_depth=0;s->drive=0;
-    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;s->osc1_attack=s->osc2_attack=10;s->osc1_decay=s->osc2_decay=230;s->osc1_sustain=s->osc2_sustain=72;s->osc1_release=s->osc2_release=240;s->mix_balance=50;s->mod_depth=50;s->lfo2_rate=22;s->lfo2_depth=50;
+    s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;s->osc1_attack=s->osc2_attack=10;s->osc1_decay=s->osc2_decay=230;s->osc1_sustain=s->osc2_sustain=72;s->osc1_release=s->osc2_release=240;s->mix_balance=50;s->mod_depth=50;s->lfo2_rate=22;s->sync_bpm=120;s->lfo2_depth=50;
     s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=1;s->smooth_shape=50;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;s->smooth_master_pan=50.f;
@@ -159,13 +159,14 @@ static const Param params[]={
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
-    P(filter_type,7),P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100),P(mod_dest,3),P(mod_depth,100),P(lfo2_rate,100),P(lfo2_dest,3),P(lfo2_depth,100),P(lfo1_waveform,5),P(lfo2_waveform,5)
+    P(filter_type,7),P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100),P(mod_dest,3),P(mod_depth,100),P(lfo2_rate,100),P(lfo2_dest,3),P(lfo2_depth,100),P(lfo1_waveform,5),P(lfo2_waveform,5),P(sync_bpm,240),P(lfo1_sync,5),P(lfo2_sync,5)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
 static void set_one(Synth *s,const char *key,const char *value){
     /* Stable proxy keys are necessary because Schwung caches physical knob
      * mappings when the component is loaded. */
+    if(eq(key,"sync_bpm")){s->sync_bpm=clampi(integer(value),20,240);return;}
     if(eq(key,"bank_select")){if(s->wt_bank==0)s->wave=clampi(integer(value),0,3);else s->wt_table=clampi(integer(value),0,95);return;}
     if(eq(key,"bank_shape")){if(s->wt_bank==0)s->legacy_shape=clampi(integer(value),0,100);else s->spectral_shape=clampi(integer(value),0,100);return;}
     if(eq(key,"wave")){
@@ -349,6 +350,20 @@ static float lfo_waveform_sample(int shape,float phase,unsigned cycle){
     float smooth=t*t*(3.f-2.f*t);
     return a+(b-a)*smooth;
 }
+/* Sync division 0=free, 1=quarter, 2=eighth, 3=sixteenth,
+ * 4=quarter triplet, 5=eighth triplet. BPM is manual until the host
+ * provides a documented tempo callback. */
+static float lfo_frequency(int division,int rate,int bpm){
+    if(division==0)return .06f+.12f*(float)rate;
+    float beat_hz=(float)clampi(bpm,20,240)/60.f;
+    switch(division){
+      case 1:return beat_hz;
+      case 2:return beat_hz*2.f;
+      case 3:return beat_hz*4.f;
+      case 4:return beat_hz*1.5f;
+      default:return beat_hz*3.f;
+    }
+}
 static void render_block(void *instance,int16_t *out,int frames){
     if(!out||frames<=0)return;
     if(frames>128)frames=128;
@@ -365,11 +380,11 @@ static void render_block(void *instance,int16_t *out,int frames){
         s->smooth_level+=.004f*(.01f*(float)s->level-s->smooth_level);
         s->smooth_master_pan+=.004f*((float)s->master_pan-s->smooth_master_pan);
         /* One global low-frequency modulator for subtle continuous wavetable motion. */
-        float lfo_hz=.06f+.12f*(float)s->lfo_rate;
+        float lfo_hz=lfo_frequency(s->lfo1_sync,s->lfo_rate,s->sync_bpm);
         s->lfo_phase+=lfo_hz*(256.f/SR);
         if(s->lfo_phase>=256.f){s->lfo_phase-=256.f;s->lfo_cycle++;}
         float lfo=lfo_waveform_sample(s->lfo1_waveform,s->lfo_phase,s->lfo_cycle);
-        float lfo2_hz=.06f+.12f*(float)s->lfo2_rate;
+        float lfo2_hz=lfo_frequency(s->lfo2_sync,s->lfo2_rate,s->sync_bpm);
         s->lfo2_phase+=lfo2_hz*(256.f/SR);
         if(s->lfo2_phase>=256.f){s->lfo2_phase-=256.f;s->lfo2_cycle++;}
         float lfo2=lfo_waveform_sample(s->lfo2_waveform,s->lfo2_phase,s->lfo2_cycle);
