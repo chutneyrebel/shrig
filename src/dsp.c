@@ -158,7 +158,7 @@ static const Param params[]={
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
     P(osc2_wavetable,107),P(osc2_position,100),P(osc2_warp_type,7),P(osc2_warp,100),P(osc2_detune,100),P(osc2_octave,4),P(osc2_pan,100),P(osc2_volume,100),
     P(osc2_level,100),P(detune,100),P(lfo_rate,100),P(lfo_depth,100),P(lfo_wt_depth,100),P(drive,100),
-    P(filter_type,7),P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100),P(mod_dest,3),P(mod_depth,100),P(lfo2_rate,100),P(lfo2_dest,3),P(lfo2_depth,100)
+    P(filter_type,7),P(filter_env_amt,100),P(filter_env_attack,2000),P(filter_env_decay,2000),P(lfo_filter,100),P(master_pan,100),P(osc1_env_enabled,1),P(osc2_env_enabled,1),P(osc1_attack,2000),P(osc1_decay,2000),P(osc1_sustain,100),P(osc1_release,2000),P(osc2_attack,2000),P(osc2_decay,2000),P(osc2_sustain,100),P(osc2_release,2000),P(mix_enabled,1),P(mix_balance,100),P(mod_dest,3),P(mod_depth,100),P(lfo2_rate,100),P(lfo2_dest,3),P(lfo2_depth,100),P(lfo1_waveform,5),P(lfo2_waveform,5)
 };
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
@@ -328,6 +328,27 @@ static int16_t pcm(float f){
     float x=clampf(f*32767.0f,-32767.f,32767.f);
     return (int16_t)(x>=0.f?x+.5f:x-.5f);
 }
+/* Phase 5 waveform engine. Index 0 retains the original sine lookup exactly.
+ * Random variants use deterministic phase-derived hashes, so modulation is
+ * reproducible and does not allocate memory or depend on global RNG state. */
+static float lfo_waveform_sample(int shape,float phase){
+    if(shape==0)return lookup(0,0,0,phase);
+    float t=phase*(1.f/256.f);
+    int cycle=(int)t;
+    t-=cycle;
+    if(shape==1)return 1.f-4.f*(t<.5f?t:1.f-t);
+    if(shape==2)return 2.f*t-1.f;
+    if(shape==3)return t<.5f?1.f:-1.f;
+    unsigned x=(unsigned)cycle*747796405u+2891336453u;
+    x^=x>>16;x*=2246822519u;x^=x>>13;
+    float a=2.f*(float)(x&65535u)/65535.f-1.f;
+    if(shape==4)return a;
+    unsigned y=(unsigned)(cycle+1)*747796405u+2891336453u;
+    y^=y>>16;y*=2246822519u;y^=y>>13;
+    float b=2.f*(float)(y&65535u)/65535.f-1.f;
+    float smooth=t*t*(3.f-2.f*t);
+    return a+(b-a)*smooth;
+}
 static void render_block(void *instance,int16_t *out,int frames){
     if(!out||frames<=0)return;
     if(frames>128)frames=128;
@@ -347,11 +368,11 @@ static void render_block(void *instance,int16_t *out,int frames){
         float lfo_hz=.06f+.12f*(float)s->lfo_rate;
         s->lfo_phase+=lfo_hz*(256.f/SR);
         if(s->lfo_phase>=256.f)s->lfo_phase-=256.f;
-        float lfo=lookup(0,0,0,s->lfo_phase);
+        float lfo=lfo_waveform_sample(s->lfo1_waveform,s->lfo_phase);
         float lfo2_hz=.06f+.12f*(float)s->lfo2_rate;
         s->lfo2_phase+=lfo2_hz*(256.f/SR);
         if(s->lfo2_phase>=256.f)s->lfo2_phase-=256.f;
-        float lfo2=lookup(0,0,0,s->lfo2_phase);
+        float lfo2=lfo_waveform_sample(s->lfo2_waveform,s->lfo2_phase);
         float mod2=(.01f*(float)(s->lfo2_depth-50))*lfo2;
         float wave=clampf(s->smooth_wave,0,3);
         float mod=(.01f*(float)(s->mod_depth-50))*lfo;
