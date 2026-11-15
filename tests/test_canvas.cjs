@@ -92,7 +92,7 @@ for(const name of Object.keys(faces)){
     nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50,lfo_depth:60,voice_activity:1}
   });
   assert(lines.length>30, name+' face has no trace');
-  assert.equal(labels.length,4,name+' face needs four meters');
+  assert.equal(labels.length,name==='main'?6:4,name+' face needs four meters plus optional oscillator labels');
 }
 const faceLines=(name)=>{const lines=[];faces[name]({...ctx,line(...args){lines.push(args);}},{
   nowMs:1000,values:{wavetable:1,osc2_wavetable:24,position:30,osc2_position:80,cutoff:45,resonance:50}
