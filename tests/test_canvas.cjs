@@ -52,7 +52,7 @@ const vals={wave:2,position:63,osc2_level:41,detune:72,cutoff:30,resonance:25,lf
 for(let i=0;i<keys.length;i++){
   const printed=[];
   overlay.drawPage({...ctx,print(x,y,t,c){printed.push(t);}}, {keys,touched:i,values:vals,nowMs:1000});
-  assert.deepEqual(printed,['R','D','F','P'],'canvas must not repeat host parameter header');
+  assert.deepEqual(printed,['1','2','R','D','F','P'],'canvas must not repeat host parameter header');
 }
 // The new root overlay uses the shared animated dual-oscillator renderer.
 // Its secondary contour must be note-gated and respond to motion depth.
