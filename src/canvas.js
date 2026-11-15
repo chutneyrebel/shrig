@@ -137,7 +137,7 @@
     const initial=(o&&o.values)||{};
     if(typeof initial.face_snapshot!=='string')return initial;
     const parts=initial.face_snapshot.split(',');
-    if(parts.length!==snapshotKeys.length)return initial;
+    if(parts.length!==snapshotKeys.length && parts.length!==26)return initial;
     const result={...initial};
     for(let i=0;i<parts.length;i++){
       const n=Number(parts[i]);
