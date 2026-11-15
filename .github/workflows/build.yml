@@ -1,4 +1,4 @@
-name: Sprig WT (Schwung ARM64)
+name: Synth_esis (Schwung ARM64)
 on:
   push:
     branches: ['main']
