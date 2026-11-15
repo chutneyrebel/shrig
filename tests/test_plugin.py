@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==61
+assert len(meta['capabilities']['chain_params'])==66
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -561,3 +561,71 @@ assert all(1<rms(s)<32000 for s in sounds),[(i,rms(s)) for i,s in enumerate(soun
 assert all(sounds[i]!=sounds[0] for i in range(1,8))
 assert sounds[6]!=sounds[0] and sounds[7]!=sounds[1]
 print('PASS: eight filter modes render finite, distinguishable PCM')
+
+# Phase 4: modulation matrix defaults remain inert for legacy presets.
+assert getp('mod_dest')=='0' and getp('mod_depth')=='50'
+assert [p['key'] for p in chain_params][-5:]==['mod_dest','mod_depth','lfo2_rate','lfo2_dest','lfo2_depth']
+setp('mod_dest',3);setp('mod_depth',0)
+assert getp('mod_dest')=='3' and getp('mod_depth')=='0'
+setp('mod_depth',100)
+assert getp('mod_depth')=='100'
+print('PASS: Phase 4 bipolar modulation matrix metadata and state')
+
+assert getp('lfo2_rate')=='22' and getp('lfo2_dest')=='0' and getp('lfo2_depth')=='50'
+setp('lfo2_dest',2);setp('lfo2_depth',100)
+assert getp('lfo2_dest')=='2' and getp('lfo2_depth')=='100'
+print('PASS: independent second LFO parameter defaults and state')
+
+# Phase 4 audio: independently verify both oscillators and shared filter routing.
+def phase4_audio(routes=(), extra=()):
+    p=api.create(b'.',None)
+    assert p
+    def put(k,v):api.set(p,k.encode(),str(v).encode())
+    for k,v in [('wavetable',70),('position',45),('osc2_wavetable',82),('osc2_position',45),
+                ('osc1_volume',100),('osc2_volume',100),('osc2_level',0),
+                ('cutoff',48),('resonance',20),('attack',1),('sustain',100),
+                ('lfo_rate',65),('lfo2_rate',29)]:
+        put(k,v)
+    for k,v in routes:put(k,v)
+    for k,v in extra:put(k,v)
+    note=(C.c_uint8*3)(0x90,60,110)
+    api.midi(p,note,3,0)
+    buf=(C.c_int16*256)()
+    samples=[]
+    for _ in range(65):
+        api.render(p,buf,128)
+        samples.extend(buf[::2])
+    api.destroy(p)
+    return samples
+
+baseline=phase4_audio()
+assert baseline==phase4_audio([('mod_dest',0),('mod_depth',100),('lfo2_dest',0),('lfo2_depth',0)])
+assert baseline==phase4_audio([('mod_dest',1),('mod_depth',50),('lfo2_dest',3),('lfo2_depth',50)])
+for dest in (1,2,3):
+    lfo1=phase4_audio([('mod_dest',dest),('mod_depth',100)])
+    lfo2=phase4_audio([('lfo2_dest',dest),('lfo2_depth',100)])
+    both=phase4_audio([('mod_dest',dest),('mod_depth',100),('lfo2_dest',dest),('lfo2_depth',100)])
+    negative=phase4_audio([('mod_dest',dest),('mod_depth',0)])
+    assert all(1<rms(a)<32000 for a in (lfo1,lfo2,both,negative)),dest
+    assert lfo1!=baseline and lfo2!=baseline,(dest,'independent LFO route is inaudible')
+    assert lfo1!=lfo2 and both!=lfo1 and both!=lfo2,(dest,'simultaneous LFO routing')
+    assert negative!=lfo1,(dest,'bipolar depth polarity')
+print('PASS: two LFOs independently and simultaneously affect all three destinations; bipolar depth and neutral legacy audio')
+
+# Preset state contains all five new parameters and restores them to a fresh instance.
+p=api.create(b'.',None)
+assert p
+values={'mod_dest':1,'mod_depth':27,'lfo2_rate':78,'lfo2_dest':3,'lfo2_depth':83}
+for k,v in values.items():api.set(p,k.encode(),str(v).encode())
+saved=C.create_string_buffer(8192)
+assert api.get(p,b'state',saved,len(saved))>0
+for k,v in values.items():assert (k+'='+str(v)).encode() in saved.value,k
+q=api.create(b'.',None)
+assert q
+api.set(q,b'state',saved.value)
+for k,v in values.items():
+    value=C.create_string_buffer(64)
+    assert api.get(q,k.encode(),value,len(value))>=0
+    assert int(value.value)==v,(k,value.value,v)
+api.destroy(p);api.destroy(q)
+print('PASS: Phase 4 matrix parameters survive preset state roundtrip')
