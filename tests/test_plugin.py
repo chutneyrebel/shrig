@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==68
+assert len(meta['capabilities']['chain_params'])==71
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -656,3 +656,20 @@ for key in ('lfo1_waveform','lfo2_waveform'):
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
 print('PASS: Phase 5 waveform selectors exposed on native MOTION page')
+
+# Phase 6: manual-BPM musical LFO divisions remain opt-in.
+for key in ('sync_bpm','lfo1_sync','lfo2_sync'):
+    desc=next(p for p in chain_params if p['key']==key)
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
+    assert desc['default']==(120 if key=='sync_bpm' else 0)
+p=api.create(b'.',None)
+assert p
+for key,val in [('sync_bpm',135),('lfo1_sync',3),('lfo2_sync',5)]:
+    api.set(p,key.encode(),str(val).encode())
+state=C.create_string_buffer(8192)
+assert api.get(p,b'state',state,len(state))>0
+for key,val in [('sync_bpm',135),('lfo1_sync',3),('lfo2_sync',5)]:
+    assert (key+'='+str(val)).encode() in state.value
+api.destroy(p)
+print('PASS: Phase 6 manual BPM and independent sync divisions survive preset state')
