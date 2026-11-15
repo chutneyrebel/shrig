@@ -728,6 +728,10 @@ native_restored=C.create_string_buffer(8192)
 assert api.get(q,b'state',native_restored,len(native_restored))>0
 assert native_restored.value==native_saved.value, 'full native state roundtrip lost parameters'
 for key in native_specs:
+    # Matrix source/destination select the editing cursor, not persistent
+    # modulation routing. The state blob stores all 24 mxN_M depths instead.
+    if key in ('matrix_source', 'matrix_destination', 'matrix_depth'):
+        continue
     expected=C.create_string_buffer(64)
     actual=C.create_string_buffer(64)
     assert api.get(p,key.encode(),expected,len(expected))>=0,key
