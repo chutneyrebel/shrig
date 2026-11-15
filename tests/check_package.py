@@ -6,7 +6,7 @@ import subprocess
 import tarfile
 from pathlib import Path
 p=Path(__file__).resolve().parents[1]
-archive=p/'dist/sprig-wt-module.tar.gz'
+archive=p/'dist/synth_esis-module.tar.gz'
 assert archive.is_file()
 meta=json.loads((p/'src/module.json').read_text())
 assert meta['capabilities']['component_type']=='sound_generator'
@@ -14,20 +14,20 @@ assert meta['api_version']==2
 assert len((p/'src/module.json').read_bytes()) < 8192
 with tarfile.open(archive,'r:gz') as tar:
     names=tar.getnames()
-    assert 'sprig-wt/module.json' in names and 'sprig-wt/dsp.so' in names and 'sprig-wt/web_ui.html' in names and 'sprig-wt/canvas.js' in names
+    assert 'synth_esis/module.json' in names and 'synth_esis/dsp.so' in names and 'synth_esis/web_ui.html' in names and 'synth_esis/canvas.js' in names
     for member in tar.getmembers():
-        assert member.name.startswith('sprig-wt/') or member.name=='sprig-wt', member.name
+        assert member.name.startswith('synth_esis/') or member.name=='synth_esis', member.name
         assert member.isfile() or member.isdir(),member.name
     # Verify that the distributable contains exactly the intended runtime files,
     # and that every nonbinary asset matches the tested source byte-for-byte.
     expected={'dsp.so','module.json','web_ui.html','canvas.js','wavetable_catalog.json'}
-    actual={m.name.removeprefix('sprig-wt/') for m in tar.getmembers() if m.isfile()}
+    actual={m.name.removeprefix('synth_esis/') for m in tar.getmembers() if m.isfile()}
     assert actual==expected,('unexpected or missing runtime assets',actual^expected)
     for asset in expected-{'dsp.so'}:
-        packaged=tar.extractfile('sprig-wt/'+asset).read()
+        packaged=tar.extractfile('synth_esis/'+asset).read()
         source=(p/'src'/asset).read_bytes()
         assert hashlib.sha256(packaged).digest()==hashlib.sha256(source).digest(),('stale packaged asset',asset)
-    binary=tar.extractfile('sprig-wt/dsp.so').read()
+    binary=tar.extractfile('synth_esis/dsp.so').read()
     assert hashlib.sha256(binary).digest()==hashlib.sha256((p/'build/dsp.so').read_bytes()).digest(),'packaged DSP differs from tested ARM64 build'
 assert binary[:4]==b'\x7fELF'
 assert binary[4]==2 and binary[5]==1
