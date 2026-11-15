@@ -19,8 +19,8 @@ nm -D build/dsp.so | grep -q 'move_plugin_init_v2'
 if readelf -d build/dsp.so | grep -q NEEDED; then
     echo 'Unexpected dynamic dependencies' >&2;exit 1
 fi
-rm -rf dist/sprig-wt
-mkdir -p dist/sprig-wt
-cp build/dsp.so src/module.json src/web_ui.html src/canvas.js src/wavetable_catalog.json dist/sprig-wt/
-tar -C dist -czf dist/sprig-wt-module.tar.gz sprig-wt
-printf 'Built: %s\n' "$(realpath dist/sprig-wt-module.tar.gz)"
+rm -rf dist/synth_esis
+mkdir -p dist/synth_esis
+cp build/dsp.so src/module.json src/web_ui.html src/canvas.js src/wavetable_catalog.json dist/synth_esis/
+tar -C dist -czf dist/synth_esis-module.tar.gz synth_esis
+printf 'Built: %s\n' "$(realpath dist/synth_esis-module.tar.gz)"
