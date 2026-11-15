@@ -218,9 +218,37 @@
         if(x)ctx.line(x,y0+previous,x+1,y,1);
         previous=y-y0;
       }
+      // Resonance accent: sparse moving peak marker, only while notes sound.
+      if(active && res>25){
+        const cx=Math.round((W-3)*(.1+.8*cutoff/100));
+        const pulse=.5+.5*Math.sin(seconds*(1+res/50)*6.28318530718);
+        const span=Math.max(1,Math.round(res/35*pulse));
+        for(let d=-span;d<=span;d+=2)ctx.fillRect(Math.max(0,Math.min(W-2,cx+d)),3,1,1,1);
+      }
       pageMeters(ctx,[['C',cutoff],['R',res],['E',value(v,'filter_env_amt',0)],['L',value(v,'lfo_filter',0)]],H,W);
     }else{
       drawOscillators(ctx,v,which,seconds,active,W,H);
+      // A restrained phase-offset ghost illustrates active motion and oscillator beating.
+      // Purely graphical: no claim of measured audio or spectral analysis.
+      if(active){
+        const width=W-3,height=Math.max(7,H-15);
+        const rate=bounded(value(v,'lfo_rate',22),22,0,100);
+        const depth=bounded(value(v,'lfo_depth',0),0,0,100);
+        const mix=bounded(value(v,'osc2_volume',0),0,0,100)/100;
+        const detune=Math.abs(value(v,'osc1_detune',50)-value(v,'osc2_detune',50))/50;
+        const intensity=which==='main'?Math.max(depth/100,mix*detune):depth/100;
+        if(intensity>.04){
+          const shift=.012+.045*intensity*Math.sin(seconds*(.15+rate*.02)*6.28318530718);
+          for(let x=2;x<width;x+=4){
+            const phase=(x/width+shift+1)%1;
+            const sample=which==='main'
+              ?(oscillatorPreview(phase,v,false,seconds,true)+mix*oscillatorPreview(phase,v,true,seconds,true))/(1+mix)
+              :oscillatorPreview(phase,v,which==='osc2',seconds,true);
+            const y=2+Math.round(height/2-Math.max(-1,Math.min(1,sample))*(height/2-2)*.78);
+            ctx.fillRect(x,y,1,1,1);
+          }
+        }
+      }
       if(which==='main'){
         pageMeters(ctx,[['R',value(v,'lfo_rate',22)],['D',value(v,'lfo_depth',0)],['F',value(v,'lfo_filter',0)],['P',value(v,'master_pan',50)]],H,W);
       }else{
