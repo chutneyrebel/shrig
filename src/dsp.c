@@ -45,6 +45,8 @@ typedef struct {
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
     int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth, lfo1_waveform, lfo2_waveform, sync_bpm, lfo1_sync, lfo2_sync;
 int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
+    int matrix_source, matrix_destination;
+    int matrix_depth[2][12]; /* 50 = neutral */
     float lfo_phase, lfo2_phase;
     unsigned lfo_cycle, lfo2_cycle;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
@@ -164,6 +166,12 @@ static const Param params[]={
 #define NP ((int)(sizeof(params)/sizeof(params[0])))
 static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
 static void set_one(Synth *s,const char *key,const char *value){
+    if(eq(key,"matrix_source")){s->matrix_source=clampi(integer(value),0,1);return;}
+    if(eq(key,"matrix_destination")){s->matrix_destination=clampi(integer(value),0,11);return;}
+    if(eq(key,"matrix_depth")){s->matrix_depth[s->matrix_source][s->matrix_destination]=clampi(integer(value),0,100);return;}
+    if(key[0]=='m'&&key[1]=='x'&&key[2]>='0'&&key[2]<='1'&&key[3]=='_'){
+        int n=integer(key+4);if(n>=0&&n<12)s->matrix_depth[key[2]-'0'][n]=clampi(integer(value),0,100);return;
+    }
     /* Stable proxy keys are necessary because Schwung caches physical knob
      * mappings when the component is loaded. */
     if(eq(key,"sync_bpm")){s->sync_bpm=clampi(integer(value),20,240);return;}
@@ -208,6 +216,9 @@ static int get_param(void *instance,const char *key,char *buf,int len){
     Synth *s=instance;
     /* Count sounding voices, including release tails, for graphical animation.
      * This read-only value never enters the audio parameter or preset list. */
+    if(eq(key,"matrix_depth")){buf[0]=0;return append_int(buf,len,0,s->matrix_depth[s->matrix_source][s->matrix_destination]);}
+    if(eq(key,"matrix_source")){buf[0]=0;return append_int(buf,len,0,s->matrix_source);}
+    if(eq(key,"matrix_destination")){buf[0]=0;return append_int(buf,len,0,s->matrix_destination);}
     if(eq(key,"bank_select")){buf[0]=0;return append_int(buf,len,0,s->wt_bank?s->wt_table:s->wave);}
     if(eq(key,"bank_shape")){buf[0]=0;return append_int(buf,len,0,s->wt_bank?s->spectral_shape:s->legacy_shape);}
     if(eq(key,"voice_activity")){
@@ -244,6 +255,12 @@ static int get_param(void *instance,const char *key,char *buf,int len){
             at=append(buf,len,at,params[i].name);
             at=append(buf,len,at,"=");
             at=append_int(buf,len,at,*param_ptr(s,i));
+            if(at<0){buf[0]=0;return -1;}
+        }
+        for(int src=0;src<2;src++)for(int dst=0;dst<12;dst++){
+            at=append(buf,len,at,",mx");at=append_int(buf,len,at,src);
+            at=append(buf,len,at,"_");at=append_int(buf,len,at,dst);
+            at=append(buf,len,at,"=");at=append_int(buf,len,at,s->matrix_depth[src][dst]);
             if(at<0){buf[0]=0;return -1;}
         }
         return at;
