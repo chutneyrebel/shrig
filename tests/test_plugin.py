@@ -740,3 +740,26 @@ for key in native_specs:
 api.destroy(p)
 api.destroy(q)
 print('PASS: Phase 10G all writable synth parameters survive Schwung native state roundtrip')
+
+# Phase 10H: every factory recipe can be applied via the DSP parameter API
+# and serialized into Schwung's native component-state format. No Move I/O.
+factory_library=json.loads((ROOT/'presets/factory.json').read_text())
+assert len(factory_library['presets'])==16
+for recipe in factory_library['presets']:
+    patch=recipe['patch']
+    assert patch['module_id']=='synth_esis' and patch['schema']==1
+    a=api.create(b'.',None)
+    b=api.create(b'.',None)
+    assert a and b
+    for key,value in patch['parameters'].items():
+        api.set(a,key.encode(),str(value).encode())
+    state=C.create_string_buffer(8192)
+    assert api.get(a,b'state',state,len(state))>0,recipe['id']
+    assert len(state.value)<2048,(recipe['id'],'native state too large')
+    api.set(b,b'state',state.value)
+    restored=C.create_string_buffer(8192)
+    assert api.get(b,b'state',restored,len(restored))>0
+    assert restored.value==state.value,('factory native roundtrip',recipe['id'])
+    api.destroy(a)
+    api.destroy(b)
+print('PASS: all 16 factory patches serialize and restore through native Schwung state')
