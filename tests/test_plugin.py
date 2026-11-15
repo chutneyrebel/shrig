@@ -564,7 +564,7 @@ print('PASS: eight filter modes render finite, distinguishable PCM')
 
 # Phase 4: modulation matrix defaults remain inert for legacy presets.
 assert getp('mod_dest')=='0' and getp('mod_depth')=='50'
-assert [p['key'] for p in chain_params][-10:-5]==['mod_dest','mod_depth','lfo2_rate','lfo2_dest','lfo2_depth']
+assert [p['key'] for p in chain_params][-13:-8]==['mod_dest','mod_depth','lfo2_rate','lfo2_dest','lfo2_depth']
 setp('mod_dest',3);setp('mod_depth',0)
 assert getp('mod_dest')=='3' and getp('mod_depth')=='0'
 setp('mod_depth',100)
