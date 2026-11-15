@@ -1,10 +1,10 @@
-# Sprig WT
+# Synth_esis
 
 **Experimental dual-oscillator wavetable synthesizer for Ableton Move, integrated through Schwung.** Independently developed; not a port of Shrub. No proprietary Shrub wavetables or source code are included.
 
 ## Current status (15 November 2026)
 
-**Phases 1–8 are merged into `main` and hardware-validated on Ableton Move.** Phase 8 completed **7/7 hardware checks** after improving the physical-display visibility of oscillator balance and voice activity. Phase 7.1 also passed its final main SYNTH animation retest. GitHub Actions passed for the Phase 8 branch before merge. **Phase 9 modulation-aware visuals are in development separately from `main`.**
+**Phases 1–9 are merged into `main` and hardware-validated on Ableton Move.** Phase 8 completed **7/7 hardware checks** after improving the physical-display visibility of oscillator balance and voice activity. Phase 7.1 also passed its final main SYNTH animation retest. GitHub Actions passed for the Phase 8 branch before merge. **Phase 9 modulation-aware visuals passed 8/8 hardware checks and were merged into `main` via PR #11.**
 
 The module descriptor still reports version `0.2.0`; development phases are not tagged public releases.
 
@@ -72,3 +72,8 @@ The Schwung module metadata has a strict **8192-byte** size budget. Keep `src/mo
 ## License and attribution
 
 [MIT license](LICENSE). Not affiliated with or endorsed by Ableton, Schwung developers, Xfer Records or the creators of Shrub.
+
+
+## Naming and compatibility
+
+Synth_esis is the public-facing instrument name. The internal Schwung module ID (`sprig-wt`), preset compatibility, installation folder, archive names, GitHub repository (`chutneyrebel/shrig`), and overlay identifiers intentionally remain unchanged during the first branding stage. Do not rename these identifiers without a separate compatibility migration and hardware tests.
