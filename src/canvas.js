@@ -1,4 +1,4 @@
-/* Sprig WT: native Move 128x64 graphics page.
+/* Synth_esis: native Move 128x64 graphics page.
  * Uses documented Schwung canvas overlay drawPage().
  * Pure rendering: no parameter reads, file operations or allocations from DSP.
  */
