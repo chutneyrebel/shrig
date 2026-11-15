@@ -1,4 +1,4 @@
-# Sprig WT v0.2.1: Phase 0 and 1 compatibility notes
+# Synth_esis v0.2.1: Phase 0 and 1 compatibility notes
 
 ## Schwung compatibility facts
 
