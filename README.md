@@ -1,39 +1,44 @@
 # Sprig WT
 
-**Experimental wavetable synthesizer for Ableton Move via Schwung.** Independently developed and inspired by exploratory wavetable instruments such as Shrub. Not a port of Shrub, and no proprietary Shrub wavetables or code are included.
+**Experimental dual-oscillator wavetable synthesizer for Ableton Move, integrated through Schwung.** Independently developed; not a port of Shrub. No proprietary Shrub wavetables or source code are included.
 
-> **Development status (14 November 2026):** Work in progress on `main`. The latest dual-oscillator changes are **not hardware-verified**. Do not install a failing or unverified CI artifact. The project is unreleased and development proceeds directly on `main`.
+## Current status (15 November 2026)
 
-## Vision
+**Phases 1, 2 and 3 are merged into `main` and hardware-validated on Ableton Move.** Phase 3 passed all 12 hardware checks with zero failures or skips. Its corresponding GitHub Actions workflow passed desktop audio/ABI tests, native canvas tests, ARM64 cross-compilation and package verification. **Phase 4 modulation-matrix development is separate from the validated `main` baseline.**
 
-Sprig WT aims to make wavetable exploration immediate: one collection of 108 original waveforms (four classic and 48 spectral), independent oscillators, hands-on warp transformations, motion, and clear visual feedback. No separate Legacy/Expanded bank selection is needed in the intended interface.
+The module descriptor currently reports version `0.2.0`; development milestones should not be confused with tagged public releases.
 
-## Implemented in the development source
+## What works
 
-- Freestanding C11 audio engine for 44.1 kHz stereo output, eight voices and band-limited wavetable playback.
-- Unified wavetable selection **0–107** with four interpolated frames per table.
-- Independent OSC 1 and OSC 2 wavetable, position, warp mode, warp amount, detune, pan and volume **parameters**. Note: the first dual-oscillator DSP implementation is in progress; stereo pan is now implemented in the development DSP and awaits Move hardware verification.
-- Eight initial phase-warp modes: **Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror, Quantize**. These are independently authored transformations, not exact reproductions of Shrub's algorithms.
-- ADSR amplitude envelope, filter envelope, LFO motion, drive and resonant low-pass filtering.
-- Four native canvases (MAIN, OSC 1, OSC 2 and FILTER) use separate Schwung encoder levels. The combined MAIN trace previews both oscillators from a bounded DSP snapshot. Visuals are approximations, not a sample-accurate FFT or DSP oscilloscope.
-- Some older compatibility parameters remain in the metadata. They are not intended to appear in the final simplified performance interface.
+- Two independent wavetable oscillators with 108 selectable tables each (IDs 0–107), four interpolated frames per table, pitch-dependent band-limiting and independent position controls.
+- Independent oscillator octave, detune, stereo pan, level, phase-warp type and amount. Warp modes: Off, Sync, Bend+, Bend−, PWM, Asymmetry, Mirror and Quantize.
+- Eight-voice, 44.1 kHz stereo C11 DSP engine with independent oscillator amplitude envelopes (opt-in), OSC MIX balance, and legacy-compatible global amplitude envelope.
+- Eight selectable shared-filter modes: **LP12, HP12, BP12, Notch, Peak, Allpass, LP24 and HP24**. The default LP12 retains the historical filter behavior.
+- Filter cutoff, resonance, drive, triggered filter envelope and LFO-to-filter modulation.
+- Four hardware-verified native Schwung canvas faces: **MAIN** (combined oscillators), **OSC 1**, **OSC 2**, and **FILTER** (illustrative response curve). Each shows contextual meter labels.
+- Additional native encoder levels for **OSC MIX**, **OSC1 Env** and **OSC2 Env**.
+- Preset save/reload and compatibility with existing presets, confirmed in Phase 2 and Phase 3 hardware testing.
+- Categorized wavetable browsing in the remote HTML interface. A native hardware category picker is not implemented.
 
-## Target four-page layout
+The waveform and filter displays are lightweight visual approximations, not measured FFTs or sample-accurate oscilloscopes. The filter is global in its parameter settings and operates on the combined oscillator signal per voice.
 
-| Page | Graph | Controls |
-| --- | --- | --- |
-| **MAIN** | Combined OSC 1 + OSC 2 waveform | Motion Rate, Motion Depth, LFO Filter Depth |
-| **OSC 1** | OSC 1 waveform | Wavetable, Position, Warp Type, Warp Amount, Detune, Pan, Volume |
-| **OSC 2** | OSC 2 waveform | Wavetable, Position, Warp Type, Warp Amount, Detune, Pan, Volume |
-| **FILTER** | Combined waveform after filtering | Cutoff, Resonance, Filter Type |
+## Hardware validation
 
-**Filter routing decision:** one **master filter** applied to the combined oscillators, not separate filters per oscillator. Planned modes include LP, HP, BP and comb, subject to DSP and CPU testing. The current DSP only implements a resonant low-pass filter.
+| Milestone | Acceptance |
+| --- | --- |
+| Phase 1: oscillator and native face foundation | Hardware tested; original report: 15 pass, 0 fail, 1 skip |
+| Phase 2: independent oscillator ADSRs and OSC MIX | **29 pass, 0 fail, 0 skip** |
+| Phase 3: eight-mode filter engine | **12 pass, 0 fail, 0 skip** |
 
-Every native face now shows four contextual meter labels. The new smoothed master pan defaults to 50 (center). Filter type and the hybrid dual-LFO matrix remain later DSP phases and are not fake controls. Their final definitions and Schwung page compatibility are still being tested. Four native canvas pages are registered in distinct Schwung hierarchy levels, with correct per-level encoder mappings and one derived snapshot per canvas; their navigation and rendering on the physical Move remain **unverified**.
+Phase 3 checks covered physical encoder selection, each filter's audible behavior, FILTER FACE response, envelope/LFO modulation, old and new presets, and stability with no reported crashes, clicks, excessive CPU usage or stuck notes.
 
-## Build and test
+- [Phase 3 merged PR #4](https://github.com/chutneyrebel/shrig/pull/4)
+- [Phase 3 passing CI run](https://github.com/chutneyrebel/shrig/actions/runs/43654970584)
+- [All Actions builds](https://github.com/chutneyrebel/shrig/actions)
 
-Requirements: Python 3, Clang, LLVM lld, GNU binutils, GCC and Node.js for the canvas tests.
+## Build and install
+
+Requirements: Python 3, Clang, LLVM lld, GNU binutils, GCC and Node.js.
 
 ```bash
 python3 scripts/generate_tables.py
@@ -43,62 +48,20 @@ bash scripts/build.sh
 python3 tests/check_package.py
 ```
 
-The build generates `dist/sprig-wt-module.tar.gz`. GitHub Actions publishes it as the **sprig-wt-targz-download** artifact, which GitHub wraps in a ZIP. Extract the ZIP once to obtain the actual `.tar.gz`.
+The build produces `dist/sprig-wt-module.tar.gz`. Successful GitHub Actions runs publish `sprig-wt-targz-download` as a ZIP containing the `.tar.gz` package. Extract the ZIP once before using the established Schwung installation process.
 
-[View CI builds](https://github.com/chutneyrebel/shrig/actions)
+Read [hardware test instructions](docs/HARDWARE_TEST.md) and back up your Move sets and current module before replacing an installation. Expected module path: `/data/UserData/schwung/modules/sound_generators/sprig-wt`. A green CI run is not a substitute for on-device testing of new branches.
 
-Only use a build whose full workflow is marked **Success**. CI success verifies desktop tests, packaging and cross-compilation, **not** behavior on the actual Move.
+## Development roadmap
 
-## Installation and safety
+- **Completed:** Phase 1, dual-oscillator architecture and hardware faces.
+- **Completed:** Phase 2, independent oscillator envelopes and OSC MIX.
+- **Completed:** Phase 3, eight-mode global filter engine.
+- **Next:** Phase 4, a backward-compatible modulation matrix, motion routing and hardware/CPU regression tests.
+- **Future:** Advanced preset management, richer motion visualization, optional native wavetable category navigation and further modulation destinations. These are plans, not shipped features.
 
-See [hardware test instructions](docs/HARDWARE_TEST.md) before changing anything on the device. Back up your Move sets and existing Sprig WT installation. The expected module directory is `/data/UserData/schwung/modules/sound_generators/sprig-wt`; verify the packaging and supported Schwung Manager installation route before deploying.
+The Schwung module metadata has a strict **8192-byte** size budget. Keep `src/module.json` and generated `src/ui_metadata.h` synchronized and preserve the legacy parameter ABI/defaults when extending controls.
 
-Do not overwrite a known-good installation with an experimental build unless you can restore it. Schwung v1.9 compatibility, canvas navigation, encoder refresh, stereo pan and filter variants require on-device verification.
+## License and attribution
 
-## Recent changes on main\n\n### Audio-engine parity pass (14 November 2026)\n\n- Added independent left/right per-voice filter states so OSC 1 and OSC 2 pan can produce stereo output while retaining the shared master-filter settings.\n- Routed wavetable-position LFO modulation to OSC 2 as well as OSC 1.\n- Made warp amount 0 neutral for all modes and increased the audible range of Quantize. Other warp algorithms still need hardware verification.\n- Added desktop regression tests for pan extremes, centered stereo and OSC 2 modulation.\n- Standardized the displayed OSC 1/OSC 2 wavetable and position labels in both packaged metadata and live DSP chain parameters.\n- Fixed CI package verification after expanded JSON formatting exceeded the 8 KB metadata limit; the shipped JSON remains compact.\n- Added an early metadata-size regression assertion (before host compilation) and an always-on GitHub Actions diagnostic summary linking to each run's failure logs. GitHub Actions executes on each push; this does not automatically repair failures or send external notifications. Internal parameter keys remain unchanged for preset compatibility.\n- **Not yet hardware-verified:** The latest GitHub Actions run must pass before installing; warp parity, parameter naming, and four graphical pages remain outstanding.\n\n## Development priorities
-
-1. **Phase 1:** Dual wavetable oscillator DSP, independently controlled warp, audio tests and stereo pan.
-2. **Phase 2:** Four native Synth Face pages and graph rendering that matches oscillator and filter mathematics; confirm Schwung's page-navigation contract.
-3. **Phase 3:** Master LP/HP/BP/comb modes, filter display, modulation indicators, CPU profiling and regression tests.
-4. **Hardware acceptance:** Verify each page, knob, preset restoration, note handling, CPU load and audible warp behavior on Ableton Move.
-
-## Repository and licensing
-
-Current repository: [chutneyrebel/shrig](https://github.com/chutneyrebel/shrig). Active development takes place directly on `main`. Experimental changes are not releases.
-
-MIT license; see [LICENSE](LICENSE). Not affiliated with or endorsed by Ableton, the Schwung developers, Xfer Records or the creators of Shrub.
-
-
-### v0.2.1 warp regression coverage
-
-The host audio suite now checks Off plus all seven active warp modes separately on OSC 1 and OSC 2. For each active mode it compares a fresh-instance reference against zero amount (must be sample-identical) and strong warp (must audibly alter the PCM signal). This is automated audio verification, not yet confirmation of on-device control feel or perceived musical quality.
-
-
-### Four-face native UI development (CI-verified; not yet hardware-tested)
-
-`src/canvas.js` now contains distinct MAIN, OSC 1, OSC 2 and FILTER drawing functions, with host-side tests for unique traces and meters. The Schwung chain metadata and root hierarchy now register all four `as_page` canvas entries with named overlays. CI checks their registration and drawing entry points; actual hardware jog-wheel navigation still needs testing. The FILTER graphic is an illustrative low-pass response, not a measured DSP frequency response; the audio filter remains low-pass only.
-
-
-### Wavetable expansion in development (v0.2.1)
-
-The unified oscillator selector now targets **100 waveforms per oscillator**: IDs 0–3 retain the original classic tables, IDs 4–51 retain the existing 48 generated spectral tables, and IDs 52–99 add 48 new spectral tables in 12 families (formant peaks, dual peaks, spectral notches, sparse clusters, nonlinear ripples, periodic partial selection, resonant combs and moving clusters). Every expanded table has four morph frames and nine pitch-dependent band-limited versions, generated before compilation with no runtime sample loading. Existing IDs remain stable. This is still a **procedurally generated wavetable library**, not user WAV import, and the native four-page registration is implemented in source and CI-verified, but not yet hardware-tested. Test the expanded library, warp engine and four-page hardware navigation together only after the full v0.2.1 release is marked ready.
-
-
-### Wavetable quality guard (v0.2.1)
-
-New expanded waveforms (IDs 52–99) are DC-centered before peak normalization, while original IDs 0–51 retain their established generation. The host test scans all 48 × 4 × 9 newly generated waveform rows for 256 samples, near-zero mean and conservative headroom. This does not yet implement 16/32-frame wavetables, phase-aligned spectral interpolation, or user WAV imports. Those need explicit memory/CPU and compatibility evaluation before changing the real-time DSP.
-
-
-### Categorized wavetable library
-
-`src/wavetable_catalog.json` maps the 96 expanded waveforms into Organic & Evolving (28), Industrial & Metallic (36), and Vocal & Spectral (32), with the four classic waveforms separate. The catalog is bundled with the module and checked for complete non-overlapping ID coverage in host tests. These are **discovery categories only**: there is not yet a native Move category picker, and this change does not add new waveforms or alter preset IDs. Native four-page registration is complete in source; physical navigation is not yet validated. Hold installation until the consolidated hardware-test release is explicitly approved.
-
-
-### Categorized wavetable browsing (v0.2.1)
-
-The Schwung remote HTML interface now provides **independent category pickers for OSC 1 and OSC 2**, alongside each oscillator's continuous wavetable ID slider. Categories are **Classic (0–3)**, **Original Spectral (4–51)**, **Organic / Atmospheric (52–67)**, **Industrial / Metallic (68–83)** and **Vocal / Formant (84–99)**. Choosing a category selects its first waveform; the slider then explores individual waveforms. The category picker follows parameter changes. IDs remain stable for presets. These are sound-design groupings of generated spectral recipes, not imported recordings. Physical Move category browsing remains unimplemented and four native canvas pages remain hardware-unverified; do not mistake remote HTML grouping for native hardware navigation.
-
-
-### Oscillator pitch and detune display (development)
-
-OSC 1 and OSC 2 each expose a five-position octave selector (-2/-1/0/+1/+2; neutral index 2) with independent phase increments, plus their existing fine-detune controls. The native Synth Face now adds a dotted secondary trace during active notes when OSC 2 is audible and the two detune settings differ; the relative phase drift is derived from the detune difference. It is an illustrative visualization, not an audio oscilloscope. The warp engine is unchanged. The existing generated wavetable bank is also unchanged in this increment; deeper spectral diversity and the four independent native canvas pages remain separate follow-up tasks.
+[MIT license](LICENSE). Not affiliated with or endorsed by Ableton, Schwung developers, Xfer Records or the creators of Shrub.
