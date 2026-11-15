@@ -69,7 +69,20 @@ def export_factory(output_dir):
                 state = buf.value.decode("ascii")
                 if len(state) >= 2048:
                     raise ValueError("native state exceeds DSP parser bound")
-                # Check canonical state can be restored to a clean instance.
+                # Verify the actual exported string can be loaded by a new
+                # DSP instance before making a downloadable preset file.
+                restored = api.create(b".", None)
+                if not restored:
+                    raise RuntimeError("restore instance unavailable")
+                try:
+                    api.set(restored, b"state", state.encode("ascii"))
+                    check = C.create_string_buffer(8192)
+                    if api.get(restored, b"state", check, len(check)) <= 0:
+                        raise RuntimeError("native state restore read failed")
+                    if check.value.decode("ascii") != state:
+                        raise ValueError("factory preset lost parameters on native restore: " + item["id"])
+                finally:
+                    api.destroy(restored)
             finally:
                 api.destroy(instance)
             documents.append({"name": item["patch"]["name"], "module": "synth_esis",
