@@ -269,6 +269,8 @@
   };
   globalThis.canvas_overlay = {
     drawPage(ctx, o) {
+      // Root SYNTH face uses the same combined-oscillator renderer as sprig_main.
+      return renderFace(ctx, o, 'main');
       const v=o && o.values || {};
       const W=ctx.width||128,H=ctx.height||40;
       if(W<32||H<18)return;
