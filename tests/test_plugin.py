@@ -703,3 +703,40 @@ dest=next(p for p in chain_params if p['key']=='matrix_destination')
 assert dest['type']=='enum' and dest['default']==0
 assert dest['options']==['O1 WT','O2 WT','Cutoff','Reso','O1 Warp','O2 Warp','O1 Pan','O2 Pan','O1 Vol','O2 Vol','O1 Tune','O2 Tune']
 print('PASS: Phase 7.1 named destination selector preserves 0-11 route IDs')
+
+# Phase 10G: Schwung native per-component preset uses the complete synth:state
+# blob. Every advertised writable numeric parameter must survive save/restore.
+native_specs = {p['key']:p for p in chain_params
+                if p['type'] in ('int','float','enum') and p.get('access') != 'read'
+                and p['key'] not in ('voice_activity','face_snapshot')}
+p = api.create(b'.',None)
+q = api.create(b'.',None)
+assert p and q
+for key,spec in native_specs.items():
+    if spec['type']=='enum':
+        target=len(spec['options'])-1
+    elif spec['type']=='int':
+        target=int(spec['max'])
+    else:
+        target=spec['max']
+    api.set(p,key.encode(),str(target).encode())
+native_saved=C.create_string_buffer(8192)
+assert api.get(p,b'state',native_saved,len(native_saved))>0
+assert len(native_saved.value)<2048, 'native state exceeds DSP state parser limit'
+api.set(q,b'state',native_saved.value)
+native_restored=C.create_string_buffer(8192)
+assert api.get(q,b'state',native_restored,len(native_restored))>0
+assert native_restored.value==native_saved.value, 'full native state roundtrip lost parameters'
+for key in native_specs:
+    # Matrix source/destination select the editing cursor, not persistent
+    # modulation routing. The state blob stores all 24 mxN_M depths instead.
+    if key in ('matrix_source', 'matrix_destination', 'matrix_depth'):
+        continue
+    expected=C.create_string_buffer(64)
+    actual=C.create_string_buffer(64)
+    assert api.get(p,key.encode(),expected,len(expected))>=0,key
+    assert api.get(q,key.encode(),actual,len(actual))>=0,key
+    assert expected.value==actual.value,(key,expected.value,actual.value)
+api.destroy(p)
+api.destroy(q)
+print('PASS: Phase 10G all writable synth parameters survive Schwung native state roundtrip')
