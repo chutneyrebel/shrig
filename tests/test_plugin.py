@@ -629,3 +629,22 @@ for k,v in values.items():
     assert int(value.value)==v,(k,value.value,v)
 api.destroy(p);api.destroy(q)
 print('PASS: Phase 4 matrix parameters survive preset state roundtrip')
+
+# Phase 5 DSP-only waveform regression. UI descriptor integration follows separately.
+def phase5_audio(lfo,key,shape):
+    routes=[('mod_dest',1),('mod_depth',100)] if lfo==1 else [('lfo2_dest',1),('lfo2_depth',100)]
+    return phase4_audio(routes,[(key,shape)])
+for lfo,key in ((1,'lfo1_waveform'),(2,'lfo2_waveform')):
+    sine=phase5_audio(lfo,key,0)
+    assert sine==phase4_audio([('mod_dest',1),('mod_depth',100)] if lfo==1 else [('lfo2_dest',1),('lfo2_depth',100)]),key
+    shapes=[phase5_audio(lfo,key,i) for i in range(6)]
+    assert len({tuple(a) for a in shapes})==6,(key,'waveforms must render distinctly')
+    assert all(1<rms(a)<32000 for a in shapes),(key,'waveforms must stay bounded')
+    p=api.create(b'.',None)
+    assert p
+    api.set(p,key.encode(),b'5')
+    saved=C.create_string_buffer(8192)
+    assert api.get(p,b'state',saved,len(saved))>0
+    assert (key+'=5').encode() in saved.value,key
+    api.destroy(p)
+print('PASS: Phase 5 six distinct LFO waveforms, original sine default, PCM bounds and state persistence')
