@@ -1,4 +1,4 @@
-/* Sprig WT: independently authored wavetable sound generator for Schwung.
+/* Synth_esis: independently authored wavetable sound generator for Schwung.
  * Freestanding C11, no libc dependencies, no file I/O or allocations in DSP.
  * API layout matches src/host/plugin_api_v1.h from charlesvestal/schwung.
  * All parameters are integer display values, eliminating RT parsing costs.
@@ -212,7 +212,7 @@ static void set_param(void *instance,const char *key,const char *value){
 static int get_param(void *instance,const char *key,char *buf,int len){
     if(key && eq(key,"ui_hierarchy"))return write_str(buf,len,ui_hierarchy_json);
     if(key && eq(key,"chain_params"))return write_str(buf,len,chain_params_json);
-    if(eq(key,"module_id"))return write_str(buf,len,"sprig-wt");
+    if(eq(key,"module_id"))return write_str(buf,len,"synth_esis");
     if(!instance||!key||!buf||len<=0)return -1;
     Synth *s=instance;
     /* Count sounding voices, including release tails, for graphical animation.

@@ -26,11 +26,11 @@ jobs:
       - name: Confirm exact .tar.gz payload before upload
         shell: bash
         run: |
-          test -f dist/sprig-wt-module.tar.gz
-          file dist/sprig-wt-module.tar.gz
-          tar -tzf dist/sprig-wt-module.tar.gz
+          test -f dist/synth_esis-module.tar.gz
+          file dist/synth_esis-module.tar.gz
+          tar -tzf dist/synth_esis-module.tar.gz
           test "$(find dist -maxdepth 1 -name '*.tar.gz' -type f | wc -l)" -eq 1
-          echo "Artifact payload: dist/sprig-wt-module.tar.gz"
+          echo "Artifact payload: dist/synth_esis-module.tar.gz"
           echo "GitHub Actions downloads are ZIP-wrapped by GitHub. Extract the ZIP once to get the .tar.gz."
       - name: Write build diagnostic summary
         if: always()
@@ -38,7 +38,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo "## Sprig WT build diagnostics"
+            echo "## Synth_esis build diagnostics"
             echo
             echo "- Commit: \`${GITHUB_SHA}\`"
             echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
@@ -50,8 +50,8 @@ jobs:
           echo "Open the run above for the exact failing step and logs." >> "${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v4
         with:
-          name: sprig-wt-targz-download
-          path: dist/sprig-wt-module.tar.gz
+          name: synth_esis-targz-download
+          path: dist/synth_esis-module.tar.gz
           if-no-files-found: error
           compression-level: 0
           retention-days: 30

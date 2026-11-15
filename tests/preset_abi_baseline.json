@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "module_id": "sprig-wt",
+  "module_id": "synth_esis",
   "parameters": {
     "wavetable": {
       "type": "int",

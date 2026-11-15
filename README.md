@@ -36,13 +36,13 @@ The waveform and filter displays are lightweight visual approximations, not meas
 
 Phase 3 checks covered physical encoder selection, each filter's audible behavior, FILTER FACE response, envelope/LFO modulation, old and new presets, and stability with no reported crashes, clicks, excessive CPU usage or stuck notes.
 
-- [Phase 7 merged PR #8](https://github.com/chutneyrebel/shrig/pull/8)
-- [Phase 7.1 merged PR #9](https://github.com/chutneyrebel/shrig/pull/9)
-- [Phase 8 merged PR #10](https://github.com/chutneyrebel/shrig/pull/10)
-- [Phase 8 passing CI run](https://github.com/chutneyrebel/shrig/actions/runs/43664947013)
-- [Phase 3 merged PR #4](https://github.com/chutneyrebel/shrig/pull/4)
-- [Phase 3 passing CI run](https://github.com/chutneyrebel/shrig/actions/runs/43654970584)
-- [All Actions builds](https://github.com/chutneyrebel/shrig/actions)
+- [Phase 7 merged PR #8](https://github.com/chutneyrebel/synth_esis/pull/8)
+- [Phase 7.1 merged PR #9](https://github.com/chutneyrebel/synth_esis/pull/9)
+- [Phase 8 merged PR #10](https://github.com/chutneyrebel/synth_esis/pull/10)
+- [Phase 8 passing CI run](https://github.com/chutneyrebel/synth_esis/actions/runs/43664947013)
+- [Phase 3 merged PR #4](https://github.com/chutneyrebel/synth_esis/pull/4)
+- [Phase 3 passing CI run](https://github.com/chutneyrebel/synth_esis/actions/runs/43654970584)
+- [All Actions builds](https://github.com/chutneyrebel/synth_esis/actions)
 
 ## Build and install
 
@@ -56,15 +56,15 @@ bash scripts/build.sh
 python3 tests/check_package.py
 ```
 
-The build produces `dist/sprig-wt-module.tar.gz`. Successful GitHub Actions runs publish `sprig-wt-targz-download` as a ZIP containing the `.tar.gz` package. Extract the ZIP once before using the established Schwung installation process.
+The build produces `dist/synth_esis-module.tar.gz`. Successful GitHub Actions runs publish `synth_esis-targz-download` as a ZIP containing the `.tar.gz` package. Extract the ZIP once before using the established Schwung installation process.
 
-Read [hardware test instructions](docs/HARDWARE_TEST.md) and back up your Move sets and current module before replacing an installation. Expected module path: `/data/UserData/schwung/modules/sound_generators/sprig-wt`. A green CI run is not a substitute for on-device testing of new branches.
+Read [hardware test instructions](docs/HARDWARE_TEST.md) and back up your Move sets and current module before replacing an installation. Expected module path: `/data/UserData/schwung/modules/sound_generators/synth_esis`. A green CI run is not a substitute for on-device testing of new branches.
 
 ## Development roadmap
 
 - **Completed and hardware-validated:** Phases 1–3, dual oscillators, independent envelopes and eight-mode filter.
 - **Completed and hardware-validated:** Phase 7, dual-LFO 24-route matrix; Phase 7.1, destination names and animated faces; Phase 8, performance HUD.
-- **In development:** Phase 9, modulation-aware visual feedback. No Phase 9 changes are shipped on `main` yet.
+- **Completed:** Phase 9 modulation-aware visual feedback (8/8 hardware checks passed).
 - **Future:** Advanced preset management and optional native wavetable category navigation.
 
 The Schwung module metadata has a strict **8192-byte** size budget. Keep `src/module.json` and generated `src/ui_metadata.h` synchronized and preserve the legacy parameter ABI/defaults when extending controls.
@@ -76,4 +76,4 @@ The Schwung module metadata has a strict **8192-byte** size budget. Keep `src/mo
 
 ## Naming and compatibility
 
-Synth_esis is the public-facing instrument name. The internal Schwung module ID (`sprig-wt`), preset compatibility, installation folder, archive names, GitHub repository (`chutneyrebel/shrig`), and overlay identifiers intentionally remain unchanged during the first branding stage. Do not rename these identifiers without a separate compatibility migration and hardware tests.
+Synth_esis is the public and internal instrument identity. The Schwung module ID, package folder and archive name are now `synth_esis`. Existing experimental sets using `sprig-wt` must be recreated or migrated manually; no compatibility alias is included.
