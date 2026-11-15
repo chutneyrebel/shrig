@@ -184,7 +184,7 @@ face=next((p for p in chain_params if p.get('key')=='face'), None)
 assert face and face['type']=='canvas' and face['as_page'] is True and face['page_first'] is True
 assert face['canvas_script']=='canvas.js'
 assert face['extra_keys']==['face_snapshot']
-assert len(getp('face_snapshot').split(','))==26
+assert len(getp('face_snapshot').split(','))==29
 assert getp('voice_activity')=='0'
 hierarchy=json.loads(getp('ui_hierarchy'))
 assert hierarchy==meta['capabilities']['ui_hierarchy'], 'Live DSP legacy hierarchy differs from shipped metadata'
