@@ -247,7 +247,17 @@ static int get_param(void *instance,const char *key,char *buf,int len){
             if(at<0)return -1;
         }
         at=append(buf,len,at,",");
-        return append_int(buf,len,at,active);
+        at=append_int(buf,len,at,active);
+        if(at<0)return -1;
+        /* Append-only read-only visual metadata: matrix cutoff routing for
+           both LFOs, plus LFO2 rate. 50 is the neutral matrix depth. */
+        const int visual[]={s->matrix_depth[0][2],s->matrix_depth[1][2],s->lfo2_rate};
+        for(unsigned i=0;i<sizeof(visual)/sizeof(visual[0]);i++){
+            at=append(buf,len,at,",");
+            at=append_int(buf,len,at,visual[i]);
+            if(at<0)return -1;
+        }
+        return at;
     }
     if(eq(key,"state")){
         int at=0;buf[0]=0;
