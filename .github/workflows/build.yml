@@ -66,6 +66,7 @@ jobs:
           git clone --depth 1 https://github.com/charlesvestal/schwung.git /tmp/schwung-host
           node scripts/patch_schwung_canvas_only.mjs /tmp/schwung-host
           node --check /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
+          node tests/test_schwung_canvas_only.mjs /tmp/schwung-host
           grep -q 'replaceKnobGrid' /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
           grep -q 'canvasReplacesGrid' /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
           echo "Host patch applies and parses. This does not validate hardware behavior."
