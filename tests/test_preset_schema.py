@@ -12,6 +12,20 @@ class PresetSchemaTests(unittest.TestCase):
     def setUp(self):
         self.patch = default_patch("Test texture")
 
+    def test_factory_library(self):
+        library = json.loads((Path(__file__).resolve().parents[1] / "presets/factory.json").read_text())
+        self.assertEqual(library["schema"], 1)
+        self.assertEqual(library["library"], "Synth_esis Factory")
+        self.assertEqual(len(library["presets"]), 16)
+        self.assertEqual(len({p["id"] for p in library["presets"]}), 16)
+        self.assertEqual(len({p["patch"]["name"] for p in library["presets"]}), 16)
+        self.assertEqual(
+            {p["category"] for p in library["presets"]},
+            {"Bass", "Lead", "Pad", "Drone", "Texture", "Rhythmic"})
+        for entry in library["presets"]:
+            self.assertTrue(entry["description"].strip())
+            self.assertEqual(parse_patch(serialize_patch(entry["patch"])), entry["patch"])
+
     def test_roundtrip(self):
         self.assertEqual(parse_patch(serialize_patch(self.patch)), self.patch)
 
