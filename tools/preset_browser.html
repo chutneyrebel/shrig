@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Synth_esis | MY PRESETS prototype</title>
+<style>
+:root{color-scheme:dark;font:15px system-ui;background:#10131b;color:#edf1fa}*{box-sizing:border-box}
+body{max-width:780px;margin:0 auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:22px;margin:0}small,.hint{color:#a7b2c6}.hint{line-height:1.5}
+.panel{background:#1b2030;border:1px solid #353d51;border-radius:12px;padding:16px;margin:15px 0}
+.controls{display:flex;gap:9px;flex-wrap:wrap}select,input,button{background:#111724;color:#edf1fa;border:1px solid #505c75;border-radius:8px;padding:10px;font:inherit}
+input{flex:1;min-width:150px}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}
+button.primary{background:#72e5cc;color:#10131b;font-weight:700}#items{display:grid;gap:8px}
+.item{display:block;text-align:left;width:100%}.item strong{display:block}.item span{color:#a7b2c6;font-size:13px}
+.item[aria-selected=true]{border-color:#72e5cc;background:#243c43}
+.status{color:#72e5cc;min-height:22px}code{overflow-wrap:anywhere}
+</style></head><body>
+<header><h1>MY PRESETS</h1><small>Phase 10D · browser prototype</small></header>
+<p class="hint">Offline browser design and audition-state simulation. No audio or Ableton Move parameters are changed here. Preview and cancel are UI-only until a verified Schwung adapter exists.</p>
+<div class="panel controls"><input id="search" type="search" placeholder="Search presets" aria-label="Search presets">
+<select id="category" aria-label="Category"><option value="">All sounds</option></select></div>
+<div class="panel"><div id="items" aria-live="polite">Loading factory library…</div></div>
+<div class="panel"><strong id="selected">No preset selected</strong><p id="description" class="hint"></p>
+<div class="controls"><button id="preview" disabled>Preview (simulate)</button><button id="confirm" class="primary" disabled>Confirm</button><button id="cancel" disabled>Cancel</button></div>
+<p class="status" id="status" role="status">Ready</p><small>Original state is restored on Cancel or when leaving this page without confirming.</small></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let library=[],chosen=null,committed=null,original=null,previewing=null;
+function setStatus(s){$('status').textContent=s}
+function controls(){
+ $('preview').disabled=!chosen;
+ $('confirm').disabled=!previewing;
+ $('cancel').disabled=!previewing;
+}
+function selectPreset(id){
+ chosen=library.find(x=>x.id===id)||null;
+ $('selected').textContent=chosen?chosen.patch.name:'No preset selected';
+ $('description').textContent=chosen?chosen.description:'';
+ controls();
+}
+function render(){
+ const q=$('search').value.trim().toLowerCase(),cat=$('category').value;
+ const results=library.filter(p=>(!cat||p.category===cat)&&(!q||[p.patch.name,p.description,p.category].join(' ').toLowerCase().includes(q)));
+ const parent=$('items');parent.replaceChildren();
+ for(const p of results){
+  const b=document.createElement('button');b.className='item';b.type='button';
+  b.setAttribute('aria-selected',String(chosen?.id===p.id));
+  const title=document.createElement('strong');title.textContent=p.patch.name;
+  const subtitle=document.createElement('span');subtitle.textContent=p.category+' · '+p.description;
+  b.append(title,subtitle);b.addEventListener('click',()=>{selectPreset(p.id);render()});parent.append(b);
+ }
+ if(!results.length)parent.textContent='No matching presets.';
+}
+$('search').addEventListener('input',render);$('category').addEventListener('change',render);
+$('preview').addEventListener('click',()=>{
+ if(!chosen)return;
+ if(!previewing)original=committed;
+ previewing=chosen;
+ setStatus('Simulated preview: '+chosen.patch.name+' (no sound changed)');
+ controls();
+});
+$('confirm').addEventListener('click',()=>{
+ if(!previewing)return;
+ committed=previewing;previewing=null;original=null;
+ setStatus('Simulated confirmation: '+committed.patch.name);
+ controls();
+});
+$('cancel').addEventListener('click',()=>{
+ if(!previewing)return;
+ previewing=null;committed=original;original=null;
+ setStatus('Simulated cancel: restored previous selection');
+ controls();
+});
+window.addEventListener('pagehide',()=>{if(previewing){committed=original;previewing=null;original=null}});
+fetch('../presets/factory.json').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()}).then(data=>{
+ if(data.schema!==1||!Array.isArray(data.presets)||data.presets.length!==16)throw Error('Invalid factory library');
+ library=data.presets;
+ for(const cat of [...new Set(library.map(p=>p.category))].sort()){
+  const o=document.createElement('option');o.value=cat;o.textContent=cat;$('category').append(o);
+ }
+ selectPreset(library[0].id);render();setStatus('Loaded '+library.length+' factory presets');
+}).catch(e=>{setStatus('Unable to load library: '+e.message);$('items').textContent='Serve repository root with a local HTTP server to test this browser.'});
+</script></body></html>
