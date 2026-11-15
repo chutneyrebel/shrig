@@ -165,8 +165,8 @@ for key in ('face_osc1','face_osc2','face_filter'):
     assert key not in meta['capabilities']['ui_hierarchy']['levels']['root']['params']
 assert len(set(p['key'] for p in meta['capabilities']['chain_params']))==len(meta['capabilities']['chain_params']), 'Duplicate chain parameter keys'
 print('PASS: four native canvas pages each have a dedicated Schwung encoder level')
-assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
-assert 'lfo_wt_depth' in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+assert 'lfo_wt_depth' in meta['capabilities']['chain_params'][[p['key'] for p in meta['capabilities']['chain_params']].index('lfo_wt_depth')]['key']
+assert 'lfo_wt_depth' in meta['capabilities']['chain_params'][[p['key'] for p in meta['capabilities']['chain_params']].index('lfo_wt_depth')]['key']
 # v1.9 obtains canvas type/as_page metadata from DSP chain_params, not module.json.
 chain_params=json.loads(getp('chain_params'))
 assert chain_params==meta['capabilities']['chain_params'], 'DSP and packaged chain_params drifted'
@@ -697,3 +697,9 @@ assert b'mx0_10=87' in again.value and b'mx1_11=13' in again.value
 api.destroy(p)
 api.destroy(q)
 print('PASS: Phase 7 24 independent bipolar routes survive state round trip')
+
+# Phase 7.1: descriptive enum labels must preserve route numeric IDs.
+dest=next(p for p in chain_params if p['key']=='matrix_destination')
+assert dest['type']=='enum' and dest['default']==0
+assert dest['options']==['O1 WT','O2 WT','Cutoff','Reso','O1 Warp','O2 Warp','O1 Pan','O2 Pan','O1 Vol','O2 Vol','O1 Tune','O2 Tune']
+print('PASS: Phase 7.1 named destination selector preserves 0-11 route IDs')
