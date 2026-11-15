@@ -166,6 +166,7 @@ static int *param_ptr(Synth *s,int i){return (int*)((char*)s+params[i].offset);}
 static void set_one(Synth *s,const char *key,const char *value){
     /* Stable proxy keys are necessary because Schwung caches physical knob
      * mappings when the component is loaded. */
+    if(eq(key,"sync_bpm")){s->sync_bpm=clampi(integer(value),20,240);return;}
     if(eq(key,"bank_select")){if(s->wt_bank==0)s->wave=clampi(integer(value),0,3);else s->wt_table=clampi(integer(value),0,95);return;}
     if(eq(key,"bank_shape")){if(s->wt_bank==0)s->legacy_shape=clampi(integer(value),0,100);else s->spectral_shape=clampi(integer(value),0,100);return;}
     if(eq(key,"wave")){
