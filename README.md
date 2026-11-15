@@ -64,7 +64,7 @@ Read [hardware test instructions](docs/HARDWARE_TEST.md) and back up your Move s
 
 - **Completed and hardware-validated:** Phases 1–3, dual oscillators, independent envelopes and eight-mode filter.
 - **Completed and hardware-validated:** Phase 7, dual-LFO 24-route matrix; Phase 7.1, destination names and animated faces; Phase 8, performance HUD.
-- **In development:** Phase 9, modulation-aware visual feedback. No Phase 9 changes are shipped on `main` yet.
+- **Completed:** Phase 9 modulation-aware visual feedback (8/8 hardware checks passed).
 - **Future:** Advanced preset management and optional native wavetable category navigation.
 
 The Schwung module metadata has a strict **8192-byte** size budget. Keep `src/module.json` and generated `src/ui_metadata.h` synchronized and preserve the legacy parameter ABI/defaults when extending controls.
