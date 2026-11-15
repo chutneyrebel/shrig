@@ -225,6 +225,16 @@
         const span=Math.max(1,Math.round(res/35*pulse));
         for(let d=-span;d<=span;d+=2)ctx.fillRect(Math.max(0,Math.min(W-2,cx+d)),3,1,1,1);
       }
+      // Phase 9 foundation: a voice-gated LFO filter sweep cursor.
+      // This is a control-derived preview, not a DSP readback.
+      const filterMotion=bounded(value(v,'lfo_filter',0),0,0,100)/100;
+      if(active && filterMotion>.01){
+        const rate=bounded(value(v,'lfo_rate',22),22,0,100);
+        const cycle=Math.sin(seconds*(.15+rate*.02)*6.28318530718);
+        const shifted=Math.max(0,Math.min(100,cutoff+cycle*filterMotion*32));
+        const cursorX=2+Math.round((W-5)*(.1+.8*shifted/100));
+        ctx.fillRect(cursorX,2,2,4,1);
+      }
       pageMeters(ctx,[['C',cutoff],['R',res],['E',value(v,'filter_env_amt',0)],['L',value(v,'lfo_filter',0)]],H,W);
     }else{
       drawOscillators(ctx,v,which,seconds,active,W,H);
