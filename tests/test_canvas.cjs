@@ -220,6 +220,6 @@ const rightHud=performancePixels({...baseHud,master_pan:90});
 assert.notDeepEqual(leftHud,blendedHud,'oscillator balance must change HUD');
 assert.notDeepEqual(leftHud,rightHud,'master pan must change HUD');
 const soundingHud=performancePixels({...baseHud,voice_activity:3});
-assert(soundingHud.some(p=>p[0]>=118&&p[1]===1&&p[2]===2&&p[3]===2),'voice activity beacon missing');
-assert(!leftHud.some(p=>p[0]>=118&&p[1]===1&&p[2]===2&&p[3]===2),'idle beacon must remain off');
+assert(soundingHud.some(p=>p[0]===5&&p[1]===ctx.height-13&&p[2]===10&&p[3]===3&&p[4]===1),'voice activity slots missing');
+assert(!leftHud.some(p=>p[0]===5&&p[1]===ctx.height-13&&p[2]===10&&p[3]===3&&p[4]===1),'idle voice slots must remain unfilled');
 console.log('PASS: Phase 8 balance, stereo position and voice-activity HUD');
