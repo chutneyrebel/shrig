@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include "tables.h"
 #include "wavetable_engine.h"
-#include "expanded_tables.h"
 
 #define SPRIG_VOICES 8
 #define SPRIG_INSTANCES 8
@@ -316,12 +315,6 @@ static float lookup(int wave,int frame,int band,float phase){
     /* Legacy bank remains sample-for-sample identical to v0.2. */
     return sprig_table_lookup_legacy(wave,frame,band,phase);
 }
-static float expanded_lookup(int table,int frame,int band,float phase){
-    int i=(int)phase & TABLE_MASK;
-    float t=phase-(float)((int)phase);
-    const float *row=sprig_expanded_tables[table][frame][band];
-    return row[i]+(row[(i+1)&TABLE_MASK]-row[i])*t;
-}
 static float sample_wave(Voice *v,float wave,float pos){
     int w0=(int)wave; int w1=w0<3?w0+1:3;
     int p0=(int)pos; int p1=p0<3?p0+1:3;
@@ -350,8 +343,8 @@ static float table_at(int table,float position,int band,float phase){
     int p0=(int)pos,p1=p0<3?p0+1:3;float pt=pos-p0;
     /* Smoothstep only for new core tables, preserving historical preset response. */
     if(t>=100)pt=pt*pt*(3.f-2.f*pt);
-    float a=t<4?lookup(t,p0,band,phase):expanded_lookup(t-4,p0,band,phase);
-    float b=t<4?lookup(t,p1,band,phase):expanded_lookup(t-4,p1,band,phase);
+    float a=t<4?lookup(t,p0,band,phase):sprig_table_lookup_expanded(t-4,p0,band,phase);
+    float b=t<4?lookup(t,p1,band,phase):sprig_table_lookup_expanded(t-4,p1,band,phase);
     return a+(b-a)*pt;
 }
 static int16_t pcm(float f){
