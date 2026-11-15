@@ -673,3 +673,27 @@ for key,val in [('sync_bpm',135),('lfo1_sync',3),('lfo2_sync',5)]:
     assert (key+'='+str(val)).encode() in state.value
 api.destroy(p)
 print('PASS: Phase 6 manual BPM and independent sync divisions survive preset state')
+
+# Phase 7 matrix: 24 routes, neutral defaults, independent state persistence.
+p=api.create(b'.',None)
+assert p
+api.set(p,b'matrix_source',b'0')
+api.set(p,b'matrix_destination',b'10')
+api.set(p,b'matrix_depth',b'87')
+api.set(p,b'matrix_source',b'1')
+api.set(p,b'matrix_destination',b'11')
+api.set(p,b'matrix_depth',b'13')
+buf=C.create_string_buffer(32)
+assert api.get(p,b'matrix_depth',buf,len(buf))>0 and buf.value==b'13'
+saved=C.create_string_buffer(8192)
+assert api.get(p,b'state',saved,len(saved))>0
+assert b'mx0_10=87' in saved.value and b'mx1_11=13' in saved.value
+q=api.create(b'.',None)
+assert q
+api.set(q,b'state',saved.value)
+again=C.create_string_buffer(8192)
+assert api.get(q,b'state',again,len(again))>0
+assert b'mx0_10=87' in again.value and b'mx1_11=13' in again.value
+api.destroy(p)
+api.destroy(q)
+print('PASS: Phase 7 24 independent bipolar routes survive state round trip')
