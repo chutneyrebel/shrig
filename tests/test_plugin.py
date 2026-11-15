@@ -148,7 +148,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==61
+assert len(meta['capabilities']['chain_params'])==63
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -561,3 +561,12 @@ assert all(1<rms(s)<32000 for s in sounds),[(i,rms(s)) for i,s in enumerate(soun
 assert all(sounds[i]!=sounds[0] for i in range(1,8))
 assert sounds[6]!=sounds[0] and sounds[7]!=sounds[1]
 print('PASS: eight filter modes render finite, distinguishable PCM')
+
+# Phase 4: modulation matrix defaults remain inert for legacy presets.
+assert getp('mod_dest')=='0' and getp('mod_depth')=='50'
+assert [p['key'] for p in chain_params][-2:]==['mod_dest','mod_depth']
+setp('mod_dest',3);setp('mod_depth',0)
+assert getp('mod_dest')=='3' and getp('mod_depth')=='0'
+setp('mod_depth',100)
+assert getp('mod_depth')=='100'
+print('PASS: Phase 4 bipolar modulation matrix metadata and state')
