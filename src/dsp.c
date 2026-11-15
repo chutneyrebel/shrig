@@ -98,6 +98,7 @@ static void defaults(Synth *s){
     s->osc2_wavetable=1;s->osc2_position=50;s->osc2_warp_type=0;s->osc2_warp=0;s->osc2_detune=50;s->osc2_octave=2;s->osc2_pan=50;s->osc2_volume=0;
     s->osc2_level=0;s->detune=50;s->lfo_rate=22;s->lfo_depth=0;s->lfo_wt_depth=0;s->drive=0;
     s->filter_env_amt=0;s->filter_env_attack=5;s->filter_env_decay=400;s->lfo_filter=0;s->master_pan=50;s->osc1_attack=s->osc2_attack=10;s->osc1_decay=s->osc2_decay=230;s->osc1_sustain=s->osc2_sustain=72;s->osc1_release=s->osc2_release=240;s->mix_balance=50;s->mod_depth=50;s->lfo2_rate=22;s->sync_bpm=120;s->lfo2_depth=50;
+    for(int src=0;src<2;src++)for(int dst=0;dst<12;dst++)s->matrix_depth[src][dst]=50;
     s->smooth_wave=1;s->smooth_position=1.5f;s->smooth_bank=0;s->smooth_table=1;s->smooth_shape=50;
     s->smooth_g=sprig_cutoff_g[s->cutoff];
     s->smooth_res=0.15f;s->smooth_level=.65f;s->smooth_master_pan=50.f;
@@ -406,11 +407,15 @@ static void render_block(void *instance,int16_t *out,int frames){
         if(s->lfo2_phase>=256.f){s->lfo2_phase-=256.f;s->lfo2_cycle++;}
         float lfo2=lfo_waveform_sample(s->lfo2_waveform,s->lfo2_phase,s->lfo2_cycle);
         float mod2=(.01f*(float)(s->lfo2_depth-50))*lfo2;
+        float mx[12];
+        for(int d=0;d<12;d++)
+            mx[d]=((float)(s->matrix_depth[0][d]-50)*.02f)*lfo+
+                  ((float)(s->matrix_depth[1][d]-50)*.02f)*lfo2;
         float wave=clampf(s->smooth_wave,0,3);
         float mod=(.01f*(float)(s->mod_depth-50))*lfo;
-        float pos=clampf(s->smooth_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo+(s->mod_dest==1?mod:0.f)+(s->lfo2_dest==1?mod2:0.f),0,3);
-        float pos2=clampf(.03f*(float)s->osc2_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo+(s->mod_dest==2?mod:0.f)+(s->lfo2_dest==2?mod2:0.f),0.f,3.f);
-        float k=2.f-1.9f*s->smooth_res;
+        float pos=clampf(s->smooth_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo+(s->mod_dest==1?mod:0.f)+(s->lfo2_dest==1?mod2:0.f)+mx[0],0,3);
+        float pos2=clampf(.03f*(float)s->osc2_position + (.015f*s->lfo_depth+.015f*s->lfo_wt_depth)*lfo+(s->mod_dest==2?mod:0.f)+(s->lfo2_dest==2?mod2:0.f)+mx[1],0.f,3.f);
+        float k=2.f-1.9f*clampf(s->smooth_res+mx[3]*.5f,0.f,1.f);
         float sumL=0.f,sumR=0.f;
         for(int i=0;i<SPRIG_VOICES;i++){
             Voice *v=&s->voices[i];if(!v->stage)continue;
@@ -418,7 +423,7 @@ static void render_block(void *instance,int16_t *out,int frames){
             float bal=.01f*s->mix_balance,gain1=s->mix_enabled?2.f*(1.f-bal):1.f,gain2=s->mix_enabled?2.f*bal:1.f;
             float table=clampf(s->smooth_table,0.f,107.f);
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
-            float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,(float)s->osc1_warp)*256.f;
+            float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,clampf((float)s->osc1_warp+mx[4]*50.f,0.f,100.f))*256.f;
             float x=table_at(t0,pos,v->band,p1);
             if(tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
             float sh=clampf((s->smooth_shape-50.f)/50.f,-1.f,1.f);
@@ -428,17 +433,17 @@ static void render_block(void *instance,int16_t *out,int frames){
                 float avg=.5f*(table_at(t0,pos,v->band,ph1)+table_at(t0,pos,v->band,ph2));
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
-            x*=.01f*s->osc1_volume;if(newmode)x*=gain1*amp1;
-            float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,(float)s->osc2_warp)*256.f;
-            float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*s->osc2_volume);
+            x*=.01f*clampf((float)s->osc1_volume+mx[8]*50.f,0.f,100.f);if(newmode)x*=gain1*amp1;
+            float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,clampf((float)s->osc2_warp+mx[5]*50.f,0.f,100.f))*256.f;
+            float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
             second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
-            float pan1=.01f*(float)s->osc1_pan,pan2=.01f*(float)s->osc2_pan;
+            float pan1=.01f*clampf((float)s->osc1_pan+mx[6]*50.f,0.f,100.f),pan2=.01f*clampf((float)s->osc2_pan+mx[7]*50.f,0.f,100.f);
             float left=x*(1.f-pan1)+second*(1.f-pan2);
             float right=x*pan1+second*pan2;
             x=left+right;
-            v->phase2+=v->increment*(1.f+.0005776f*((float)s->osc2_detune-50.f))*(s->osc2_octave==0?.25f:s->osc2_octave==1?.5f:s->osc2_octave==3?2.f:s->osc2_octave==4?4.f:1.f);
+            v->phase2+=v->increment*(1.f+.0005776f*(clampf((float)s->osc2_detune+mx[11]*50.f,0.f,100.f)-50.f))*(s->osc2_octave==0?.25f:s->osc2_octave==1?.5f:s->osc2_octave==3?2.f:s->osc2_octave==4?4.f:1.f);
             while(v->phase2>=256.f)v->phase2-=256.f;
-            v->phase+=v->increment*(1.f+.0005776f*((float)s->osc1_detune-50.f))*(s->osc1_octave==0?.25f:s->osc1_octave==1?.5f:s->osc1_octave==3?2.f:s->osc1_octave==4?4.f:1.f);
+            v->phase+=v->increment*(1.f+.0005776f*(clampf((float)s->osc1_detune+mx[10]*50.f,0.f,100.f)-50.f))*(s->osc1_octave==0?.25f:s->osc1_octave==1?.5f:s->osc1_octave==3?2.f:s->osc1_octave==4?4.f:1.f);
             while(v->phase>=256.f)v->phase-=256.f;
             /* Soft clipping before filter: independent nonlinear shaper. */
             if(s->drive>0){float d=.03f*(float)s->drive;float u=left*(1.f+d);left=u/(1.f+(u<0.f?-u:u)*d*.25f);u=right*(1.f+d);right=u/(1.f+(u<0.f?-u:u)*d*.25f);}
@@ -454,7 +459,7 @@ static void render_block(void *instance,int16_t *out,int frames){
                 v->filter_env-=1.f/denom;
                 if(v->filter_env<=0.f){v->filter_env=0.f;v->filter_stage=0;}
             }
-            float cutoff_target=(float)s->cutoff + .45f*(float)s->filter_env_amt*v->filter_env + .35f*(float)s->lfo_filter*lfo+(s->mod_dest==3?60.f*mod:0.f)+(s->lfo2_dest==3?60.f*mod2:0.f);
+            float cutoff_target=(float)s->cutoff + .45f*(float)s->filter_env_amt*v->filter_env + .35f*(float)s->lfo_filter*lfo+(s->mod_dest==3?60.f*mod:0.f)+(s->lfo2_dest==3?60.f*mod2:0.f)+mx[2]*50.f;
             v->smooth_cut+=.005f*(clampf(cutoff_target,0.f,100.f)-v->smooth_cut);
             int ci=clampi((int)(v->smooth_cut+.5f),0,100);
             float g=sprig_cutoff_g[ci];
