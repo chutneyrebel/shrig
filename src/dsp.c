@@ -43,7 +43,7 @@ typedef struct {
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
-    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth;
+    int filter_env_amt, filter_env_attack, filter_env_decay, lfo_filter, master_pan, filter_type, mod_dest, mod_depth, lfo2_rate, lfo2_dest, lfo2_depth, lfo1_waveform, lfo2_waveform;
 int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_release,osc2_attack,osc2_decay,osc2_sustain,osc2_release,mix_enabled,mix_balance;
     float lfo_phase, lfo2_phase;
     unsigned lfo_cycle, lfo2_cycle;
