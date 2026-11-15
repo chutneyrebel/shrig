@@ -60,6 +60,15 @@ jobs:
           compression-level: 0
           retention-days: 30
 
+      - name: Smoke-test Schwung host patch against upstream main
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/charlesvestal/schwung.git /tmp/schwung-host
+          node scripts/patch_schwung_canvas_only.mjs /tmp/schwung-host
+          node --check /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
+          grep -q 'replaceKnobGrid' /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
+          grep -q 'canvasReplacesGrid' /tmp/schwung-host/src/shared/param_pages/page_plan.mjs
+          echo "Host patch applies and parses. This does not validate hardware behavior."
       - name: Verify navigation and FACE encoder contract
         run: python3 -m unittest discover -s tests -p 'test_navigation_contract.py'
       - name: Export native factory presets for optional manual installation
