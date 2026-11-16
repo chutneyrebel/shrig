@@ -36,6 +36,19 @@ class SpectralPrototypeTests(unittest.TestCase):
         half = spectral_shape(original, tilt=-0.5, mix=0.5)
         for a, b, c in zip(original, wet, half):
             self.assertAlmostEqual(c, (a + b) / 2, places=8)
+    def test_fft_roundtrip(self):
+        from spectral_shape import _fft
+        signal = [0.3 * math.sin(2 * math.pi * 3 * i / N)
+                  + 0.2 * math.cos(2 * math.pi * 11 * i / N) for i in range(N)]
+        recovered = _fft(_fft(signal), inverse=True)
+        for expected, actual in zip(signal, recovered):
+            self.assertAlmostEqual(expected, actual.real, places=9)
+            self.assertAlmostEqual(actual.imag, 0, places=9)
+    def test_fft_preserves_dc_and_real_output(self):
+        signal = [0.4 + x for x in sine(7)]
+        shaped = spectral_shape(signal, tilt=0.5, cutoff=0.3)
+        self.assertAlmostEqual(sum(signal), sum(shaped), places=8)
+        self.assertTrue(all(math.isfinite(v) for v in shaped))
     def test_invalid_inputs(self):
         for kwargs in ({"tilt": 2}, {"cutoff": -1}, {"mix": float("nan")}):
             with self.assertRaises(ValueError):
