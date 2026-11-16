@@ -34,6 +34,11 @@ jobs:
           python3 scripts/generate_curated_header.py --output build/curated_tables.h
           printf '#include "curated_tables.h"\nint main(void){return SYNTH_ESIS_CURATED_COUNT != 16;}\n' > build/curated_header_check.c
           gcc -std=c11 -fsyntax-only -Ibuild build/curated_header_check.c
+          clang --target=aarch64-linux-gnu -ffreestanding -nostdinc \
+            -isystem "$(clang -print-resource-dir)/include" \
+            -O2 -c -Ibuild build/curated_header_check.c -o build/curated_header_check.o
+          readelf -h build/curated_header_check.o | grep -q AArch64
+          echo "Curated bank syntax and ARM64 object compilation passed; live DSP unchanged."
       - name: Validate Phase 10A preset schema
         run: python3 -m unittest discover -s tests -p 'test_preset_*.py'
       - name: Validate native factory preset export
