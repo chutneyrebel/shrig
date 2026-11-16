@@ -18,7 +18,7 @@ jobs:
       - name: Run desktop ABI and audio tests
         run: python3 tests/test_plugin.py
       - name: Test Phase 10 spectral shaping prototype and lookup guards
-        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py'
+        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py'
       - name: Validate Phase 10A preset schema
         run: python3 -m unittest discover -s tests -p 'test_preset_*.py'
       - name: Validate native factory preset export
