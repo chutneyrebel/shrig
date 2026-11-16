@@ -18,7 +18,7 @@ jobs:
       - name: Run desktop ABI and audio tests
         run: python3 tests/test_plugin.py
       - name: Test Phase 10 spectral shaping prototype and lookup guards
-        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py' && python3 -m unittest discover -s tests -p 'test_curated_wavetables.py' && python3 -m unittest discover -s tests -p 'test_curated_export.py'
+        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py' && python3 -m unittest discover -s tests -p 'test_curated_wavetables.py' && python3 -m unittest discover -s tests -p 'test_curated_export.py' && python3 -m unittest discover -s tests -p 'test_curated_header.py'
       - name: Export 16 curated custom wavetables
         run: |
           python3 scripts/export_curated_wavetables.py --output-dir dist/curated-wavetables
@@ -29,6 +29,11 @@ jobs:
           path: dist/curated-wavetables/*.json
           if-no-files-found: error
           retention-days: 30
+      - name: Generate optional curated C bank and check syntax
+        run: |
+          python3 scripts/generate_curated_header.py --output build/curated_tables.h
+          printf '#include "curated_tables.h"\nint main(void){return SYNTH_ESIS_CURATED_COUNT != 16;}\n' > build/curated_header_check.c
+          gcc -std=c11 -fsyntax-only -Ibuild build/curated_header_check.c
       - name: Validate Phase 10A preset schema
         run: python3 -m unittest discover -s tests -p 'test_preset_*.py'
       - name: Validate native factory preset export
