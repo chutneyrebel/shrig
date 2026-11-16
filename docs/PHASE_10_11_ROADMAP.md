@@ -1,47 +1,46 @@
-# Synth_esis development roadmap: Phases 10 and 11
+# Synth_esis Phase 10 + 11 integration roadmap
 
-Status: Phase 10A automated CI and Move hardware validation passed. Integration branch: `development-phase10-11`. Do not merge to `main` without explicit approval.
+Branch: `development-phase10-11`; draft PR #33. Never merge without explicit approval.
 
-## Integration strategy
+## Product decision: quality-first 16 + early custom wavetables
 
-- Continue Phases 10 and 11 on this **single integration branch**, branched from the Phase 10A refactor. PR #32 remains an independent review record and is **not merged**.
-- Keep small, reviewable commits and a passing GitHub Actions run at each checkpoint.
-- Preserve IDs 0–107, historical presets, Schwung API v2, 8-encoder control contracts, 128x64 canvas performance and metadata size.
-- New shaping defaults must be strictly bypassed for existing presets. Do not repurpose legacy `spectral_shape`, `shape`, or `legacy_shape` parameters: they already have historical meanings.
-- Keep new features independently authored; Vital GPLv3 source is reference material only and must not be copied into this MIT repository.
-- Only merge the integration branch to `main` after Phase 11 is stable, CI is green, hardware tests pass, and the owner explicitly approves.
+- **16 curated primary tables** for new patches. The curated list is a design target, not a claim that the audio engine already exposes them.
+- **Preserve IDs 0–107** and existing presets during migration; do not delete the legacy banks until explicit migration testing and approval.
+- **Bring custom wavetable format and offline import/export into Phase 10B**, before the full web editor. Start with a deterministic, validated, versioned JSON interchange format; Move runtime loading comes only after security, size and host compatibility checks.
+- Keep new shaping neutral/bypassed for existing presets. Never reuse existing parameter IDs or alter the current page layout silently.
+- Keep Move audio thread allocation-free, bounded and without FFT work. No third-party GPL code copied.
 
-## Phase 10: advanced wavetable shaping and responsive visuals
+## Phase 10
 
-| Stage | Deliverable | Gate |
+| Stage | Work | Acceptance |
 | --- | --- | --- |
-| 10A | Unified legacy and expanded wavetable lookup boundary, no audible change | **Passed**: CI and user Move test |
-| 10B-1 | Offline spectral transform prototypes: harmonic tilt, spectral filtering; deterministic generated data, no runtime allocation | Numeric spectral regression tests and table-size budget |
-| 10B-2 | Per-oscillator shape engine, explicit neutral/bypass defaults, safe interpolation | Legacy preset audio regression and ARM64 CPU budget |
-| 10C | Bounded DSP-derived waveform/spectrum snapshot for Move canvas; rate-limited UI reads | Canvas/host contract and hardware animation test |
-| 10D | Harmonic shift, spectral fold and phase distortion; avoid unsafe high-frequency content | Aliasing, headroom and polyphony tests |
-| 10E | Two independent OSC SHAPE pages, 8 encoders each, modulation routing and smoothing | Full page-order/encoder/preset regression |
-| 10F | Advanced hybrid editor data contract and offline wavetable import/export design | Round-trip tests and safe invalid-file handling |
+| 10A | Unified wavetable lookup | CI and Move hardware PASS |
+| 10B-1 | Offline harmonic tilt/filtering, FFT, band-limited shape prototypes | CI PASS |
+| **10B-2** | **16-table curated bank plan + versioned custom interchange, validated import/export** | Schema roundtrip, invalid data and size tests |
+| 10B-3 | Actual curated source waveforms, quality review, aliasing/level and footprint benchmarks | Audio/size tests; explicit table selection approval |
+| 10B-4 | Neutral-by-default per-oscillator spectral shaping in live DSP | Legacy preset audio comparison, ARM64/CPU checks |
+| 10C | DSP-derived waveform and spectral visuals | Canvas and hardware test |
+| 10D | Harmonic shift/fold and phase transforms | Aliasing and headroom checks |
+| 10E | Two OSC SHAPE hardware pages and matrix integration | Encoder, navigation, preset regression |
+| 10F | Move-safe custom wavetable loader and editor integration | Invalid input, memory and offline/online testing |
 
-**Design invariant:** wavetable preprocessing is offline/non-audio-thread. Playback remains bounded lookup and interpolation; avoid FFTs and allocations inside `render`. New spectral preview must represent the actual transformed tables, not a separate visual approximation.
+## Phase 11
 
-## Phase 11: hybrid editor and stability consolidation
-
-| Stage | Deliverable | Gate |
+| Stage | Work | Acceptance |
 | --- | --- | --- |
-| 11A | Versioned wavetable/shape interchange schema, bank IDs and validation | Compatibility, corruption and round-trip tests |
-| 11B | Schwung web editor: harmonic spectrum, draw/import controls, live preview | Cross-browser and host integration |
-| 11C | Optional dedicated editor interface, export/import with no dependency on desktop at performance time | Repeatable export and Move install |
-| 11D | Hardware performance tuning, UI/audio stress tests, migration and rollback support | 8-voice sustained load, no dropouts |
-| 11E | Consolidated Phase 10+11 release candidate on integration branch | CI, hardware acceptance, explicit merge approval |
+| 11A | Custom wavetable workflow refinement and preset migration | Version compatibility and migration |
+| 11B | Schwung web harmonic/draw editor and preview | Host and UI validation |
+| 11C | User bank management, transfer, import/export and standalone playback | Roundtrip and hardware tests |
+| 11D | Eight-voice stress, stability, rollback, CPU and memory optimization | Sustained hardware testing |
+| 11E | Single consolidated Phase 10+11 release candidate | CI + Move validation + explicit merge approval |
 
-## Next immediate work
+## 16 proposed timbral slots (subject to listening review)
 
-1. Implement 10B-1 as a standalone, independently authored offline spectral prototype and unit tests.
-2. Measure generated bank footprint before introducing more shapes.
-3. Integrate neutral-by-default oscillator shaping only after audio equivalence tests are in place.
-4. Start Phase 10C DSP-derived visuals alongside the sound engine, not as an afterthought.
+Sine, Saw, Square, Triangle, Odd, Formant, Hollow, Metallic,
+Glass, Vocal, Organic, Resonant, Inharmonic, Spectral Sweep, Fractal, Noise-like.
 
-## Merge policy
+These are **target identities**, not newly implemented DSP assets. Curated tables should use the existing 4-frame / 9-band / 256-sample representation unless testing justifies a change.
 
-Do not automatically merge PR #32 or the integration branch. The final consolidation PR will target `main` from `development-phase10-11` only after Phase 11 stability is confirmed.
+## Current checkpoint
+
+10B-2: introduce standalone interchange schema and tests; no audio engine change, no hardware installation required. Subsequent changes stay on this branch and draft PR #33. Never merge automatically.
