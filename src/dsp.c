@@ -338,13 +338,39 @@ static float warp_phase(float p,int mode,float amount){
     else if(mode==7){float steps=64.f-60.f*a;p=(float)(int)(p*steps)/steps;}
     return clampf(p,0.f,.99999f);
 }
+/* Curated IDs 108..123 are reserved for the optional bank.
+ * Existing preset parameters still clamp at 107, so this cannot alter
+ * historical patches or expose new IDs before UI/preset migration tests. */
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+#include "curated_tables.h"
+static float curated_table_at(int index,int frame,int band,float phase){
+    int i=(int)phase & 255;
+    float frac=phase-(float)((int)phase);
+    const float *row=synth_esis_curated_tables[index][frame][band];
+    return row[i]+(row[(i+1)&255]-row[i])*frac;
+}
+#endif
 static float table_at(int table,float position,int band,float phase){
-    int t=clampi(table,0,107);float pos=clampf(position,0.f,3.f);
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+    int t=clampi(table,0,123);
+#else
+    int t=clampi(table,0,107);
+#endif
+    float pos=clampf(position,0.f,3.f);
     int p0=(int)pos,p1=p0<3?p0+1:3;float pt=pos-p0;
     /* Smoothstep only for new core tables, preserving historical preset response. */
     if(t>=100)pt=pt*pt*(3.f-2.f*pt);
-    float a=t<4?lookup(t,p0,band,phase):sprig_table_lookup_expanded(t-4,p0,band,phase);
-    float b=t<4?lookup(t,p1,band,phase):sprig_table_lookup_expanded(t-4,p1,band,phase);
+    float a,b;
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+    if(t>=108){
+        a=curated_table_at(t-108,p0,band,phase);
+        b=curated_table_at(t-108,p1,band,phase);
+    }else
+#endif
+    {
+        a=t<4?lookup(t,p0,band,phase):sprig_table_lookup_expanded(t-4,p0,band,phase);
+        b=t<4?lookup(t,p1,band,phase):sprig_table_lookup_expanded(t-4,p1,band,phase);
+    }
     return a+(b-a)*pt;
 }
 static int16_t pcm(float f){
