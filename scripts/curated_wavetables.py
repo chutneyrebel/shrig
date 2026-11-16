@@ -19,7 +19,7 @@ def harmonic_weight(table, h, frame):
     if table == 1: return h ** (-1.0 - 0.4 * t)
     if table == 2: return (h ** (-1.0 - 0.2 * t)) if h % 2 else 0.0
     if table == 3: return (h ** (-2.0 - 0.3 * t)) if h % 2 else 0.0
-    if table == 4: return (h ** -0.8) if h % 2 else 0.0
+    if table == 4: return (h ** (-0.8 - 0.45*t)) if h % 2 else 0.0
     if table == 5: return math.exp(-((h - (4 + 11*t)) / 2.4)**2) / math.sqrt(h)
     if table == 6: return (h ** -1.0) if h % 3 == 1 else 0.02 / h
     if table == 7: return (0.2 + 0.8 * abs(math.sin(h * (0.83 + 0.13*t)))) / h**0.7
