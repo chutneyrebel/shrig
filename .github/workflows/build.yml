@@ -18,7 +18,17 @@ jobs:
       - name: Run desktop ABI and audio tests
         run: python3 tests/test_plugin.py
       - name: Test Phase 10 spectral shaping prototype and lookup guards
-        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py' && python3 -m unittest discover -s tests -p 'test_curated_wavetables.py'
+        run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py' && python3 -m unittest discover -s tests -p 'test_curated_wavetables.py' && python3 -m unittest discover -s tests -p 'test_curated_export.py'
+      - name: Export 16 curated custom wavetables
+        run: |
+          python3 scripts/export_curated_wavetables.py --output-dir dist/curated-wavetables
+          test "$(find dist/curated-wavetables -maxdepth 1 -name '*.json' | wc -l)" -eq 16
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synth_esis-curated-wavetables-preview
+          path: dist/curated-wavetables/*.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Validate Phase 10A preset schema
         run: python3 -m unittest discover -s tests -p 'test_preset_*.py'
       - name: Validate native factory preset export
