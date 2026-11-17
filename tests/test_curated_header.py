@@ -15,8 +15,20 @@ class CuratedHeaderTests(unittest.TestCase):
             self.assertEqual(a, b)
             self.assertIn(b"static const float synth_esis_curated_tables[16][4][9][256]", a)
             self.assertEqual(a.count(b"/* "), 17)
-    def test_legacy_runtime_not_modified(self):
+    def test_curated_bank_is_opt_in(self):
+        """Optional curated bank must not affect default legacy DSP builds."""
         root = Path(__file__).resolve().parents[1]
-        self.assertNotIn("curated_tables.h", (root / "src" / "dsp.c").read_text())
+        source = (root / "src" / "dsp.c").read_text()
+        self.assertEqual(source.count('#include "curated_tables.h"'), 1)
+        self.assertIn(
+            '#ifdef SYNTH_ESIS_ENABLE_CURATED\n#include "curated_tables.h"',
+            source,
+        )
+        self.assertIn(
+            '#ifdef SYNTH_ESIS_ENABLE_CURATED\n    int t=clampi(table,0,123);\n'
+            '#else\n    int t=clampi(table,0,107);\n#endif',
+            source,
+        )
+        self.assertIn('#ifdef SYNTH_ESIS_ENABLE_CURATED\n    if(t>=108)', source)
 if __name__ == "__main__":
     unittest.main()
