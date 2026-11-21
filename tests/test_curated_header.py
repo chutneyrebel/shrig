@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from generate_curated_header import generate
+from curated_wavetables import NAMES
+from aggressive_spectral import MODES
 
 class CuratedHeaderTests(unittest.TestCase):
     def test_deterministic_header(self):
@@ -14,7 +16,12 @@ class CuratedHeaderTests(unittest.TestCase):
             b = generate(Path(directory) / "b.h").read_bytes()
             self.assertEqual(a, b)
             self.assertIn(b"static const float synth_esis_curated_tables[16][4][9][256]", a)
-            self.assertEqual(a.count(b"/* "), 17)
+            # One file header, one comment per curated table and spectral mode.
+            self.assertEqual(a.count(b"/* "), 1 + len(NAMES) + len(MODES))
+            for name in NAMES:
+                self.assertIn(("/* " + name + " */").encode("ascii"), a)
+            for mode in MODES:
+                self.assertIn(("/* " + mode + " */").encode("ascii"), a)
     def test_curated_bank_is_opt_in(self):
         """Optional curated bank must not affect default legacy DSP builds."""
         root = Path(__file__).resolve().parents[1]
