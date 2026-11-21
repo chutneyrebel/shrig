@@ -12,6 +12,7 @@ class SpectralReferenceTests(unittest.TestCase):
     def setUp(self):
         self.wave = [0.5 * math.sin(2 * math.pi * t / SIZE)
                      + 0.2 * math.sin(2 * math.pi * 7 * t / SIZE)
+                     + 0.15 * math.sin(2 * math.pi * 91 * t / SIZE)
                      for t in range(SIZE)]
 
     def test_exact_zero_depth_bypass(self):
