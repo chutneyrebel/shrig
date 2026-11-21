@@ -29,6 +29,8 @@ jobs:
             -isystem "$(clang -print-resource-dir)/include" \
             -O2 -Wall -Wextra -Werror -c -I. /tmp/se_probe.c -o /tmp/test_spectral_bins_arm64.o
           readelf -h /tmp/test_spectral_bins_arm64.o | grep -q AArch64
+      - name: Validate compositional spectral corners and DSP smoothing
+        run: python3 -m unittest discover -s tests -p 'test_spectral_composition.py'
       - name: Compare C spectral output against Python oracle
         run: python3 -m unittest discover -s tests -p 'test_spectral_c_parity.py'
       - name: Benchmark isolated spectral engine on CI host
