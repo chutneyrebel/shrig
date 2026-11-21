@@ -52,6 +52,9 @@ int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_r
     float lfo_phase, lfo2_phase;
     unsigned lfo_cycle, lfo2_cycle;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
+    /* Two independent three-axis spectral depth smoothers, private to this instance.
+     * Updated once per output sample, never in set_param or per voice. */
+    float smooth_spectral[2][3];
     unsigned age;
     Voice voices[SPRIG_VOICES];
 } Synth;
@@ -477,6 +480,14 @@ static void render_block(void *instance,int16_t *out,int frames){
         s->smooth_res+=.004f*(.01f*(float)s->resonance-s->smooth_res);
         s->smooth_level+=.004f*(.01f*(float)s->level-s->smooth_level);
         s->smooth_master_pan+=.004f*((float)s->master_pan-s->smooth_master_pan);
+        /* About 5.7 ms one-pole time constant at 44.1 kHz; avoids clicks on
+         * abrupt hardware encoder/preset changes without allocating or locking. */
+        s->smooth_spectral[0][0]+=.004f*((float)s->osc1_spectral_shift*.01f-s->smooth_spectral[0][0]);
+        s->smooth_spectral[0][1]+=.004f*((float)s->osc1_spectral_fold*.01f-s->smooth_spectral[0][1]);
+        s->smooth_spectral[0][2]+=.004f*((float)s->osc1_spectral_scramble*.01f-s->smooth_spectral[0][2]);
+        s->smooth_spectral[1][0]+=.004f*((float)s->osc2_spectral_shift*.01f-s->smooth_spectral[1][0]);
+        s->smooth_spectral[1][1]+=.004f*((float)s->osc2_spectral_fold*.01f-s->smooth_spectral[1][1]);
+        s->smooth_spectral[1][2]+=.004f*((float)s->osc2_spectral_scramble*.01f-s->smooth_spectral[1][2]);
         /* One global low-frequency modulator for subtle continuous wavetable motion. */
         float lfo_hz=lfo_frequency(s->lfo1_sync,s->lfo_rate,s->sync_bpm);
         s->lfo_phase+=lfo_hz*(256.f/SR);
@@ -505,7 +516,7 @@ static void render_block(void *instance,int16_t *out,int frames){
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
             float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,clampf((float)s->osc1_warp+mx[4]*50.f,0.f,100.f))*256.f;
             float x=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,p1,
-                .01f*s->osc1_spectral_shift,.01f*s->osc1_spectral_fold,.01f*s->osc1_spectral_scramble):table_at(t0,pos,v->band,p1);
+                s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(t0,pos,v->band,p1);
             if(!s->curated_osc1 && tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
             float sh=clampf((s->smooth_shape-50.f)/50.f,-1.f,1.f);
             if(sh!=0.f){
@@ -514,16 +525,16 @@ static void render_block(void *instance,int16_t *out,int frames){
                 int shape_table=s->curated_osc1?107+s->curated_osc1:t0;
                 /* Shape samples the same spectral signal as the main oscillator. */
                 float left=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph1,
-                    .01f*s->osc1_spectral_shift,.01f*s->osc1_spectral_fold,.01f*s->osc1_spectral_scramble):table_at(shape_table,pos,v->band,ph1);
+                    s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(shape_table,pos,v->band,ph1);
                 float right=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph2,
-                    .01f*s->osc1_spectral_shift,.01f*s->osc1_spectral_fold,.01f*s->osc1_spectral_scramble):table_at(shape_table,pos,v->band,ph2);
+                    s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(shape_table,pos,v->band,ph2);
                 float avg=.5f*(left+right);
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
             x*=.01f*clampf((float)s->osc1_volume+mx[8]*50.f,0.f,100.f);if(newmode)x*=gain1*amp1;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,clampf((float)s->osc2_warp+mx[5]*50.f,0.f,100.f))*256.f;
             float second=(s->curated_osc2?spectral_morph_at(s->curated_osc2-1,pos2,v->band,p2,
-                .01f*s->osc2_spectral_shift,.01f*s->osc2_spectral_fold,.01f*s->osc2_spectral_scramble):
+                s->smooth_spectral[1][0],s->smooth_spectral[1][1],s->smooth_spectral[1][2]):
                 table_at(s->osc2_wavetable,pos2,v->band,p2))*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
             second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
             float pan1=.01f*clampf((float)s->osc1_pan+mx[6]*50.f,0.f,100.f),pan2=.01f*clampf((float)s->osc2_pan+mx[7]*50.f,0.f,100.f);
