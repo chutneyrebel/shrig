@@ -351,6 +351,18 @@ static float curated_table_at(int index,int frame,int band,float phase){
     const float *row=synth_esis_curated_tables[index][frame][band];
     return row[i]+(row[(i+1)&255]-row[i])*frac;
 }
+/* Precomputed spectral lookup. No FFT or allocation in the audio callback.
+ * The bank is currently staged for the forthcoming per-oscillator controls. */
+static float spectral_table_at(int mode,int index,int frame,int band,float phase){
+    if(mode<0 || mode>=SYNTH_ESIS_SPECTRAL_MODES || index<0 || index>=SYNTH_ESIS_CURATED_COUNT)
+        return 0.f;
+    if(frame<0 || frame>=SYNTH_ESIS_CURATED_FRAMES || band<0 || band>=SYNTH_ESIS_CURATED_BANDS)
+        return 0.f;
+    int i=(int)phase & 255;
+    float frac=phase-(float)((int)phase);
+    const float *row=synth_esis_spectral_tables[mode][index][frame][band];
+    return row[i]+(row[(i+1)&255]-row[i])*frac;
+}
 #endif
 static float table_at(int table,float position,int band,float phase){
 #ifdef SYNTH_ESIS_ENABLE_CURATED
