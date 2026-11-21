@@ -21,9 +21,10 @@ def _target(mode, harmonic, depth, limit, frame):
         # Aggressive upward shift: fundamental can move to 4th/8th/12th partial.
         return harmonic + int(round(depth * min(32, max(4, limit//2))))
     if mode == 1:
-        # Fold above the effective spectral ceiling back into lower partials.
+        # Preserve lower harmonics; reflect only those crossing the spectral ceiling.
         ceiling=max(3, int(round(limit*(1.0-0.76*depth))))
-        return 1 + abs((harmonic-1) % (2*ceiling-2) - (ceiling-1))
+        offset=(harmonic-1) % (2*ceiling-2)
+        return 1 + min(offset, 2*ceiling-2-offset)
     # Deterministic scrambled harmonic bins; depth controls displacement.
     seed=(harmonic*73+frame*47+19) % 127
     displacement=int(round(depth*(seed-63)*0.46))
