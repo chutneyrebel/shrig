@@ -788,6 +788,7 @@ assert rms(curated)>10, 'curated oscillator silent'
 assert rms([x-y for x,y in zip(base,curated)])>10, 'curated oscillator not audibly different'
 api.set(a,b'curated_osc1',b'0')
 api.set(a,b'curated_osc2',b'16')
-assert getp('curated_osc1') in ('0','16')  # global test instance is separate from a
+v=C.create_string_buffer(32)
+assert api.get(a,b'curated_osc2',v,len(v))>=0 and v.value==b'16'
 api.destroy(a)
 print('PASS: curated wavetable bank compiles and changes audible DSP output')
