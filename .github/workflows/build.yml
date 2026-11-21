@@ -29,6 +29,8 @@ jobs:
             -isystem "$(clang -print-resource-dir)/include" \
             -O2 -Wall -Wextra -Werror -c -I. /tmp/se_probe.c -o /tmp/test_spectral_bins_arm64.o
           readelf -h /tmp/test_spectral_bins_arm64.o | grep -q AArch64
+      - name: Compare C spectral output against Python oracle
+        run: python3 -m unittest discover -s tests -p 'test_spectral_c_parity.py'
       - name: Verify compositional spectral reference
         run: python3 -m unittest discover -s tests -p 'test_spectral_reference.py'
       - name: Test Phase 10 spectral shaping prototype and lookup guards
