@@ -6,6 +6,7 @@ Not included by dsp.c yet. Legacy table IDs and runtime remain unchanged.
 import argparse
 from pathlib import Path
 from curated_wavetables import NAMES, FRAMES, BAND_LIMITS, N, generate_row, raw_float32_bytes
+from aggressive_spectral import MODES, transform_row
 
 def generate(path):
     path = Path(path)
@@ -25,6 +26,21 @@ def generate(path):
                 for limit in BAND_LIMITS:
                     row = generate_row(table, frame, limit)
                     out.write("{" + ",".join(format(v, ".9g") + "f" if v != 0 else "0.0f" for v in row) + "},\n")
+                out.write("},\n")
+            out.write("},\n")
+        out.write("};\n")
+        out.write("#define SYNTH_ESIS_SPECTRAL_MODES 3\n")
+        out.write("static const float synth_esis_spectral_tables[3][16][4][9][256] = {\n")
+        for mode in range(len(MODES)):
+            out.write("{ /* " + MODES[mode] + " */\n")
+            for table in range(len(NAMES)):
+                out.write("{\n")
+                for frame in range(FRAMES):
+                    out.write("{\n")
+                    for limit in BAND_LIMITS:
+                        row = transform_row(table, frame, limit, mode, 1.0)
+                        out.write("{" + ",".join(format(v, ".9g") + "f" if v != 0 else "0.0f" for v in row) + "},\n")
+                    out.write("},\n")
                 out.write("},\n")
             out.write("},\n")
         out.write("};\n#endif\n")
