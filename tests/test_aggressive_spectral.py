@@ -29,6 +29,16 @@ class AggressiveSpectralTests(unittest.TestCase):
             changed=transform_row(7,2,BAND_LIMITS[0],mode,1)
             difference=math.sqrt(sum((a-b)**2 for a,b in zip(base,changed))/N)
             self.assertGreater(difference,.08,(MODES[mode],difference))
+    def test_fold_preserves_fundamental_and_reflects_above_ceiling(self):
+        from aggressive_spectral import _target
+        for depth in (0.0001, 0.1, 0.5, 1.0):
+            self.assertEqual(_target(1, 1, depth, 64, 0), 1)
+        # At depth=1, ceiling=15: harmonics 1..15 stay in order.
+        self.assertEqual([_target(1, h, 1.0, 64, 0) for h in range(1, 18)],
+                         list(range(1, 16)) + [14, 13])
+        # The previous implementation reversed the fundamental to harmonic 15.
+        self.assertEqual(_target(1, 2, 0.0001, 64, 0), 2)
+
     def test_invalid(self):
         with self.assertRaises(ValueError):transform_row(0,0,BAND_LIMITS[0],0,1.1)
         with self.assertRaises(ValueError):transform_row(0,0,BAND_LIMITS[0],3,0.5)
