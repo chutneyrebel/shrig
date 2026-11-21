@@ -31,6 +31,10 @@ jobs:
           readelf -h /tmp/test_spectral_bins_arm64.o | grep -q AArch64
       - name: Compare C spectral output against Python oracle
         run: python3 -m unittest discover -s tests -p 'test_spectral_c_parity.py'
+      - name: Benchmark isolated spectral engine on CI host
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror tests/bench_spectral_bins.c -o /tmp/bench_spectral_bins
+          /tmp/bench_spectral_bins
       - name: Verify compositional spectral reference
         run: python3 -m unittest discover -s tests -p 'test_spectral_reference.py'
       - name: Test Phase 10 spectral shaping prototype and lookup guards
