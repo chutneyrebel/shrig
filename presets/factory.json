@@ -80,7 +80,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -162,7 +168,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -244,7 +256,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -326,7 +344,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -408,7 +432,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -490,7 +520,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -572,7 +608,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -654,7 +696,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -736,7 +784,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -818,7 +872,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -900,7 +960,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -982,7 +1048,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -1064,7 +1136,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -1146,7 +1224,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -1228,7 +1312,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     },
@@ -1310,7 +1400,13 @@
           "matrix_destination": 0,
           "matrix_depth": 50,
           "curated_osc1": 0,
-          "curated_osc2": 0
+          "curated_osc2": 0,
+          "osc1_spectral_shift": 0,
+          "osc1_spectral_fold": 0,
+          "osc1_spectral_scramble": 0,
+          "osc2_spectral_shift": 0,
+          "osc2_spectral_fold": 0,
+          "osc2_spectral_scramble": 0
         }
       }
     }
