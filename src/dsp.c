@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include "tables.h"
 #include "wavetable_engine.h"
-#include "expanded_tables.h"
 
 #define SPRIG_VOICES 8
 #define SPRIG_INSTANCES 8
@@ -40,6 +39,9 @@ typedef struct {
 
 typedef struct {
     int wavetable, shape, wave, wt_bank, wt_table, spectral_shape, legacy_shape, position, cutoff, resonance, attack, decay, sustain, release, level;
+    int curated_osc1, curated_osc2;
+    int osc1_spectral_shift,osc1_spectral_fold,osc1_spectral_scramble;
+    int osc2_spectral_shift,osc2_spectral_fold,osc2_spectral_scramble;
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
@@ -50,6 +52,9 @@ int osc1_env_enabled,osc2_env_enabled,osc1_attack,osc1_decay,osc1_sustain,osc1_r
     float lfo_phase, lfo2_phase;
     unsigned lfo_cycle, lfo2_cycle;
     float smooth_wave, smooth_position, smooth_bank, smooth_table, smooth_shape, smooth_g, smooth_res, smooth_level, smooth_master_pan;
+    /* Two independent three-axis spectral depth smoothers, private to this instance.
+     * Updated once per output sample, never in set_param or per voice. */
+    float smooth_spectral[2][3];
     unsigned age;
     Voice voices[SPRIG_VOICES];
 } Synth;
@@ -157,6 +162,9 @@ static void on_midi(void *instance,const uint8_t *msg,int len,int source){
 typedef struct { const char *name; int min,max; size_t offset; } Param;
 #define P(key,hi) {#key,0,hi,offsetof(Synth,key)}
 static const Param params[]={
+    P(curated_osc1,16),P(curated_osc2,16),
+    P(osc1_spectral_shift,100),P(osc1_spectral_fold,100),P(osc1_spectral_scramble,100),
+    P(osc2_spectral_shift,100),P(osc2_spectral_fold,100),P(osc2_spectral_scramble,100),
     P(wavetable,107),P(shape,100),P(wave,3),P(wt_bank,1),P(wt_table,95),P(spectral_shape,100),P(legacy_shape,100),P(position,100),P(cutoff,100),P(resonance,100),
     P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
@@ -192,6 +200,12 @@ static void set_param(void *instance,const char *key,const char *value){
     if(!instance||!key||!value)return;
     Synth *s=instance;
     if(eq(key,"state")){
+        /* Older presets do not contain the six Phase 10 spectral keys.
+         * Loading one must restore neutral spectral processing, not retain
+         * hidden values from the previously selected sound. The smoothing
+         * state follows these new targets naturally without clicks. */
+        s->osc1_spectral_shift=s->osc1_spectral_fold=s->osc1_spectral_scramble=0;
+        s->osc2_spectral_shift=s->osc2_spectral_fold=s->osc2_spectral_scramble=0;
         char k[32],v[24];int ix=0;
         while(value[ix] && ix<2048){
             int ki=0,vi=0;
@@ -316,12 +330,6 @@ static float lookup(int wave,int frame,int band,float phase){
     /* Legacy bank remains sample-for-sample identical to v0.2. */
     return sprig_table_lookup_legacy(wave,frame,band,phase);
 }
-static float expanded_lookup(int table,int frame,int band,float phase){
-    int i=(int)phase & TABLE_MASK;
-    float t=phase-(float)((int)phase);
-    const float *row=sprig_expanded_tables[table][frame][band];
-    return row[i]+(row[(i+1)&TABLE_MASK]-row[i])*t;
-}
 static float sample_wave(Voice *v,float wave,float pos){
     int w0=(int)wave; int w1=w0<3?w0+1:3;
     int p0=(int)pos; int p1=p0<3?p0+1:3;
@@ -345,15 +353,88 @@ static float warp_phase(float p,int mode,float amount){
     else if(mode==7){float steps=64.f-60.f*a;p=(float)(int)(p*steps)/steps;}
     return clampf(p,0.f,.99999f);
 }
+/* Curated IDs 108..123 are reserved for the optional bank.
+ * Existing preset parameters still clamp at 107, so this cannot alter
+ * historical patches or expose new IDs before UI/preset migration tests. */
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+#include "curated_tables.h"
+static float curated_table_at(int index,int frame,int band,float phase){
+    int i=(int)phase & 255;
+    float frac=phase-(float)((int)phase);
+    const float *row=synth_esis_curated_tables[index][frame][band];
+    return row[i]+(row[(i+1)&255]-row[i])*frac;
+}
+/* Precomputed spectral lookup. No FFT or allocation in the audio callback.
+ * The bank is currently staged for the forthcoming per-oscillator controls. */
+static float spectral_table_at(int mode,int index,int frame,int band,float phase){
+    if(mode<0 || mode>=SYNTH_ESIS_SPECTRAL_MODES || index<0 || index>=SYNTH_ESIS_CURATED_COUNT)
+        return 0.f;
+    if(frame<0 || frame>=SYNTH_ESIS_CURATED_FRAMES || band<0 || band>=SYNTH_ESIS_CURATED_BANDS)
+        return 0.f;
+    int i=(int)phase & 255;
+    float frac=phase-(float)((int)phase);
+    const float *row=synth_esis_spectral_tables[mode][index][frame][band];
+    return row[i]+(row[(i+1)&255]-row[i])*frac;
+}
+#endif
 static float table_at(int table,float position,int band,float phase){
-    int t=clampi(table,0,107);float pos=clampf(position,0.f,3.f);
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+    int t=clampi(table,0,123);
+#else
+    int t=clampi(table,0,107);
+#endif
+    float pos=clampf(position,0.f,3.f);
     int p0=(int)pos,p1=p0<3?p0+1:3;float pt=pos-p0;
     /* Smoothstep only for new core tables, preserving historical preset response. */
     if(t>=100)pt=pt*pt*(3.f-2.f*pt);
-    float a=t<4?lookup(t,p0,band,phase):expanded_lookup(t-4,p0,band,phase);
-    float b=t<4?lookup(t,p1,band,phase):expanded_lookup(t-4,p1,band,phase);
+    float a,b;
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+    if(t>=108){
+        a=curated_table_at(t-108,p0,band,phase);
+        b=curated_table_at(t-108,p1,band,phase);
+    }else
+#endif
+    {
+        a=t<4?lookup(t,p0,band,phase):sprig_table_lookup_expanded(t-4,p0,band,phase);
+        b=t<4?lookup(t,p1,band,phase):sprig_table_lookup_expanded(t-4,p1,band,phase);
+    }
     return a+(b-a)*pt;
 }
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+/* Compositional spectral cube: 000 is the exact base, while 001..111
+ * represent sequential Shift -> Fold -> Scramble at their full endpoints.
+ * Trilinear weights keep all six encoder depths continuously interpolated
+ * without spectral FFT, allocation, locks or rebuilding in render_block.
+ * Tables are independently bandlimited and peak/RMS bounded offline. */
+static float spectral_morph_at(int index,float position,int band,float phase,
+                               float shift,float fold,float scramble){
+    float a=clampf(shift,0.f,1.f),b=clampf(fold,0.f,1.f),c=clampf(scramble,0.f,1.f);
+    float total=a+b+c;
+    float original=table_at(108+index,position,band,phase);
+    if(total<=0.f)return original;
+    float pos=clampf(position,0.f,3.f);
+    int p0=(int)pos,p1=p0<3?p0+1:3;
+    float t=pos-(float)p0;t=t*t*(3.f-2.f*t);
+    float result=original*(1.f-a)*(1.f-b)*(1.f-c);
+    for(int mask=1;mask<=SYNTH_ESIS_SPECTRAL_MODES;mask++){
+        float weight=((mask&1)?a:1.f-a)*((mask&2)?b:1.f-b)*((mask&4)?c:1.f-c);
+        if(weight<=0.f)continue;
+        float lo=spectral_table_at(mask-1,index,p0,band,phase);
+        float hi=spectral_table_at(mask-1,index,p1,band,phase);
+        result+=weight*(lo+(hi-lo)*t);
+    }
+    return result;
+}
+#else
+/* Native factory-preset export builds without the optional curated table bank.
+ * Keep the plugin loadable: spectral controls are neutral in this configuration.
+ * The hardware build defines SYNTH_ESIS_ENABLE_CURATED and uses the full engine. */
+static float spectral_morph_at(int index,float position,int band,float phase,
+                               float shift,float fold,float scramble){
+    (void)shift;(void)fold;(void)scramble;
+    return table_at(108+index,position,band,phase);
+}
+#endif
 static int16_t pcm(float f){
     float x=clampf(f*32767.0f,-32767.f,32767.f);
     return (int16_t)(x>=0.f?x+.5f:x-.5f);
@@ -407,6 +488,14 @@ static void render_block(void *instance,int16_t *out,int frames){
         s->smooth_res+=.004f*(.01f*(float)s->resonance-s->smooth_res);
         s->smooth_level+=.004f*(.01f*(float)s->level-s->smooth_level);
         s->smooth_master_pan+=.004f*((float)s->master_pan-s->smooth_master_pan);
+        /* About 5.7 ms one-pole time constant at 44.1 kHz; avoids clicks on
+         * abrupt hardware encoder/preset changes without allocating or locking. */
+        s->smooth_spectral[0][0]+=.004f*((float)s->osc1_spectral_shift*.01f-s->smooth_spectral[0][0]);
+        s->smooth_spectral[0][1]+=.004f*((float)s->osc1_spectral_fold*.01f-s->smooth_spectral[0][1]);
+        s->smooth_spectral[0][2]+=.004f*((float)s->osc1_spectral_scramble*.01f-s->smooth_spectral[0][2]);
+        s->smooth_spectral[1][0]+=.004f*((float)s->osc2_spectral_shift*.01f-s->smooth_spectral[1][0]);
+        s->smooth_spectral[1][1]+=.004f*((float)s->osc2_spectral_fold*.01f-s->smooth_spectral[1][1]);
+        s->smooth_spectral[1][2]+=.004f*((float)s->osc2_spectral_scramble*.01f-s->smooth_spectral[1][2]);
         /* One global low-frequency modulator for subtle continuous wavetable motion. */
         float lfo_hz=lfo_frequency(s->lfo1_sync,s->lfo_rate,s->sync_bpm);
         s->lfo_phase+=lfo_hz*(256.f/SR);
@@ -434,18 +523,27 @@ static void render_block(void *instance,int16_t *out,int frames){
             float table=clampf(s->smooth_table,0.f,107.f);
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
             float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,clampf((float)s->osc1_warp+mx[4]*50.f,0.f,100.f))*256.f;
-            float x=table_at(t0,pos,v->band,p1);
-            if(tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
+            float x=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,p1,
+                s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(t0,pos,v->band,p1);
+            if(!s->curated_osc1 && tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
             float sh=clampf((s->smooth_shape-50.f)/50.f,-1.f,1.f);
             if(sh!=0.f){
                 float ph1=p1+8.f,ph2=p1-8.f;
                 if(ph1>=256.f)ph1-=256.f;if(ph2<0.f)ph2+=256.f;
-                float avg=.5f*(table_at(t0,pos,v->band,ph1)+table_at(t0,pos,v->band,ph2));
+                int shape_table=s->curated_osc1?107+s->curated_osc1:t0;
+                /* Shape samples the same spectral signal as the main oscillator. */
+                float left=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph1,
+                    s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(shape_table,pos,v->band,ph1);
+                float right=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph2,
+                    s->smooth_spectral[0][0],s->smooth_spectral[0][1],s->smooth_spectral[0][2]):table_at(shape_table,pos,v->band,ph2);
+                float avg=.5f*(left+right);
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
             x*=.01f*clampf((float)s->osc1_volume+mx[8]*50.f,0.f,100.f);if(newmode)x*=gain1*amp1;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,clampf((float)s->osc2_warp+mx[5]*50.f,0.f,100.f))*256.f;
-            float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
+            float second=(s->curated_osc2?spectral_morph_at(s->curated_osc2-1,pos2,v->band,p2,
+                s->smooth_spectral[1][0],s->smooth_spectral[1][1],s->smooth_spectral[1][2]):
+                table_at(s->osc2_wavetable,pos2,v->band,p2))*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
             second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
             float pan1=.01f*clampf((float)s->osc1_pan+mx[6]*50.f,0.f,100.f),pan2=.01f*clampf((float)s->osc2_pan+mx[7]*50.f,0.f,100.f);
             float left=x*(1.f-pan1)+second*(1.f-pan2);

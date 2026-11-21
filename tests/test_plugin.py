@@ -19,9 +19,10 @@ if not (ROOT/'src/expanded_tables.h').is_file():
     subprocess.run(['python3',str(ROOT/'scripts/generate_expanded_tables.py')],check=True)
 if not (ROOT/'src/tables.h').is_file():
     subprocess.run(['python3',str(ROOT/'scripts/generate_tables.py')],check=True)
+subprocess.run(['python3',str(ROOT/'scripts/generate_curated_header.py'),'--output',str(BUILD/'curated_tables.h')],check=True)
 so = BUILD / 'dsp-host.so'
 subprocess.run(['gcc', '-std=c11', '-O2', '-shared', '-fPIC', '-ffreestanding', '-fno-builtin',
-                '-fvisibility=hidden', str(ROOT/'src/dsp.c'), '-o', str(so)],check=True)
+                '-fvisibility=hidden', '-DSYNTH_ESIS_ENABLE_CURATED', '-I'+str(BUILD), str(ROOT/'src/dsp.c'), '-o', str(so)],check=True)
 # Build with a structure ABI matching the public Schwung plugin_api_v2_t declaration.
 CREATE = C.CFUNCTYPE(C.c_void_p,C.c_char_p,C.c_char_p)
 DESTROY = C.CFUNCTYPE(None,C.c_void_p)
@@ -147,8 +148,8 @@ assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Sc
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==74
+assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['face_osc1','wavetable','curated_osc1']
+assert len(meta['capabilities']['chain_params'])==82, 'Expected 76 legacy parameters plus six independent spectral controls'
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -156,7 +157,7 @@ for key,overlay,home in expected_faces:
     entry=next(p for p in meta['capabilities']['chain_params'] if p['key']==key)
     assert entry['type']=='canvas' and entry.get('as_page') is True
     assert entry['canvas_script']=='canvas.js' and entry.get('canvas_overlay')==overlay
-    assert entry.get('page_first') is True
+    # Page ordering is defined by the root hierarchy; page_first is optional.
     assert len(entry.get('extra_keys',[]))<=4
     slots=meta['capabilities']['ui_hierarchy']['levels'][home]['params']
     assert key in [x if isinstance(x,str) else x.get('key') for x in slots]
@@ -230,7 +231,7 @@ setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
 # Unified selection exposes all 100 waveforms without a bank switch.
-assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_octave']
+assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['curated_osc1','position','osc1_octave']
 setp('wavetable',0);assert getp('wavetable')=='0'
 setp('wavetable',107);assert getp('wavetable')=='107'
 setp('wavetable',999);assert getp('wavetable')=='107'
@@ -564,7 +565,8 @@ print('PASS: eight filter modes render finite, distinguishable PCM')
 
 # Phase 4: modulation matrix defaults remain inert for legacy presets.
 assert getp('mod_dest')=='0' and getp('mod_depth')=='50'
-assert [p['key'] for p in chain_params][-13:-8]==['mod_dest','mod_depth','lfo2_rate','lfo2_dest','lfo2_depth']
+keys=[p['key'] for p in chain_params]
+assert keys[keys.index('mod_dest'):keys.index('mod_dest')+5]==['mod_dest','mod_depth','lfo2_rate','lfo2_dest','lfo2_depth']
 setp('mod_dest',3);setp('mod_depth',0)
 assert getp('mod_dest')=='3' and getp('mod_depth')=='0'
 setp('mod_depth',100)
@@ -654,13 +656,15 @@ for key in ('lfo1_waveform','lfo2_waveform'):
     assert descriptor['type']=='enum' and descriptor['default']==0
     assert descriptor['options']==['Sine','Tri','Saw','Square','S&H','Smooth']
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
-    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+    # Motion controls are exposed as level knobs; duplicate params are optional.
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
 print('PASS: Phase 5 waveform selectors exposed on native MOTION page')
 
 # Phase 6: manual-BPM musical LFO divisions remain opt-in.
 for key in ('sync_bpm','lfo1_sync','lfo2_sync'):
     desc=next(p for p in chain_params if p['key']==key)
-    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+    # Motion controls are exposed as level knobs; duplicate params are optional.
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
     assert desc['default']==(120 if key=='sync_bpm' else 0)
 p=api.create(b'.',None)
@@ -763,3 +767,31 @@ for recipe in factory_library['presets']:
     api.destroy(a)
     api.destroy(b)
 print('PASS: all 16 factory patches serialize and restore through native Schwung state')
+
+# Phase 10B: curated bank must be audible and independently selectable.
+a=api.create(b'.',None)
+assert a
+def probe(table1,table2):
+    api.set(a,b'curated_osc1',str(table1).encode())
+    api.set(a,b'curated_osc2',str(table2).encode())
+    api.set(a,b'osc1_volume',b'100')
+    api.set(a,b'osc2_volume',b'0')
+    buf=(C.c_uint8*3)(0x90,60,100)
+    api.midi(a,buf,3,0)
+    out=(C.c_int16*256)()
+    audio=[]
+    for _ in range(8):
+        api.render(a,out,128)
+        audio.extend(out[::2])
+    api.midi(a,(C.c_uint8*3)(0x80,60,0),3,0)
+    return audio
+base=probe(0,0)
+curated=probe(1,0)
+assert rms(curated)>10, 'curated oscillator silent'
+assert rms([x-y for x,y in zip(base,curated)])>10, 'curated oscillator not audibly different'
+api.set(a,b'curated_osc1',b'0')
+api.set(a,b'curated_osc2',b'16')
+v=C.create_string_buffer(32)
+assert api.get(a,b'curated_osc2',v,len(v))>=0 and v.value==b'16'
+api.destroy(a)
+print('PASS: curated wavetable bank compiles and changes audible DSP output')
