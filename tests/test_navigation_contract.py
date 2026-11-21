@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_LEVELS = [
-    "osc1", "osc2", "filter", "motion", "matrix",
+    "osc1", "osc1_spectral", "osc2", "osc2_spectral", "filter", "motion", "matrix",
     "osc1_amp", "osc2_amp", "osc_mix",
 ]
 EXPECTED_FACE_KNOBS = [
