@@ -37,6 +37,8 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror tests/bench_spectral_bins.c -o /tmp/bench_spectral_bins
           /tmp/bench_spectral_bins
+      - name: Test composed spectral audio and oscillator isolation
+        run: python3 -m unittest discover -s tests -p 'test_spectral_audio_integration.py'
       - name: Verify compositional spectral reference
         run: python3 -m unittest discover -s tests -p 'test_spectral_reference.py'
       - name: Test Phase 10 spectral shaping prototype and lookup guards
