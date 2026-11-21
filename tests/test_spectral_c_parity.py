@@ -112,5 +112,28 @@ class SpectralCParity(unittest.TestCase):
                     self.assertAlmostEqual(got.im, want.imag, delta=0.0001)
 
 
+    def test_offline_generated_corners_match_native_full_depth_engine(self):
+        # The shipped wavetable generator must agree with the same C engine
+        # audited separately, including deterministic scramble permutations.
+        import sys
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from spectral_composition import compose_bins
+        rng = random.Random(82315)
+        for limit in (1, 4, 8, 16, 32, 64, 96):
+            for mask in range(1, 8):
+                values = [complex(rng.uniform(-0.5, 0.5),
+                                  rng.uniform(-0.5, 0.5)) for _ in range(129)]
+                c_array = (Complex * 129)(*(Complex(z.real, z.imag) for z in values))
+                seed = rng.randrange(1, 100000)
+                expected = compose_bins([complex(v.re, v.im) for v in c_array],
+                                        mask, limit, protect=3, seed=seed)
+                self.fn(c_array, float(bool(mask & 1)), float(bool(mask & 2)),
+                        float(bool(mask & 4)), seed, limit, 3)
+                for k, (got, want) in enumerate(zip(c_array, expected)):
+                    with self.subTest(limit=limit, mask=mask, bin=k):
+                        self.assertAlmostEqual(got.re, want.real, delta=0.0001)
+                        self.assertAlmostEqual(got.im, want.imag, delta=0.0001)
+
+
 if __name__ == "__main__":
     unittest.main()
