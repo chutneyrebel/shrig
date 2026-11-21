@@ -21,5 +21,15 @@ class CuratedIntegrationTests(unittest.TestCase):
         self.assertEqual(by_key["wavetable"]["max"],107)
         self.assertEqual(by_key["osc2_wavetable"]["max"],107)
         self.assertEqual(by_key["wt_bank"]["options"],["Legacy","Expanded"])
+        self.assertEqual(by_key["curated_osc1"]["default"],0)
+        self.assertEqual(by_key["curated_osc2"]["default"],0)
+        self.assertEqual(by_key["curated_osc1"]["max"],16)
+        self.assertEqual(by_key["curated_osc2"]["max"],16)
+        dsp=(ROOT/"src/dsp.c").read_text()
+        self.assertIn("s->curated_osc1?table_at(107+s->curated_osc1",dsp)
+        self.assertIn("s->curated_osc2?107+s->curated_osc2",dsp)
+        levels=json.loads((ROOT/"src/module.json").read_text())["capabilities"]["ui_hierarchy"]["levels"]
+        self.assertEqual(levels["osc1"]["knobs"][0],"curated_osc1")
+        self.assertEqual(levels["osc2"]["knobs"][0],"curated_osc2")
 if __name__=="__main__":
     unittest.main()
