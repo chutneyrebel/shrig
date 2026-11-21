@@ -387,6 +387,30 @@ static float table_at(int table,float position,int band,float phase){
     }
     return a+(b-a)*pt;
 }
+#ifdef SYNTH_ESIS_ENABLE_CURATED
+/* Spectral morphing for curated tables. Each mode is independently weighted;
+ * the normalized mix prevents a three-effect gain explosion. At zero depth
+ * this returns the original table exactly. Only called for curated IDs. */
+static float spectral_morph_at(int index,float position,int band,float phase,
+                               float shift,float fold,float scramble){
+    float a=clampf(shift,0.f,1.f),b=clampf(fold,0.f,1.f),c=clampf(scramble,0.f,1.f);
+    float total=a+b+c;
+    float original=table_at(108+index,position,band,phase);
+    if(total<=0.f)return original;
+    float pos=clampf(position,0.f,3.f);
+    int p0=(int)pos,p1=p0<3?p0+1:3;
+    float t=pos-(float)p0;t=t*t*(3.f-2.f*t);
+    float processed=0.f;
+    if(a>0.f)processed+=a*(spectral_table_at(0,index,p0,band,phase)+
+        (spectral_table_at(0,index,p1,band,phase)-spectral_table_at(0,index,p0,band,phase))*t);
+    if(b>0.f)processed+=b*(spectral_table_at(1,index,p0,band,phase)+
+        (spectral_table_at(1,index,p1,band,phase)-spectral_table_at(1,index,p0,band,phase))*t);
+    if(c>0.f)processed+=c*(spectral_table_at(2,index,p0,band,phase)+
+        (spectral_table_at(2,index,p1,band,phase)-spectral_table_at(2,index,p0,band,phase))*t);
+    float wet=clampf(total,0.f,1.f);
+    return original*(1.f-wet)+(processed/total)*wet;
+}
+#endif
 static int16_t pcm(float f){
     float x=clampf(f*32767.0f,-32767.f,32767.f);
     return (int16_t)(x>=0.f?x+.5f:x-.5f);
