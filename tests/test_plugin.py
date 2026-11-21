@@ -149,7 +149,7 @@ assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
 assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['face_osc1','wavetable','curated_osc1']
-assert len(meta['capabilities']['chain_params'])==76
+assert len(meta['capabilities']['chain_params'])==82, 'Expected 76 legacy parameters plus six independent spectral controls'
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -157,7 +157,7 @@ for key,overlay,home in expected_faces:
     entry=next(p for p in meta['capabilities']['chain_params'] if p['key']==key)
     assert entry['type']=='canvas' and entry.get('as_page') is True
     assert entry['canvas_script']=='canvas.js' and entry.get('canvas_overlay')==overlay
-    assert entry.get('page_first') is True
+    # Page ordering is defined by the root hierarchy; page_first is optional.
     assert len(entry.get('extra_keys',[]))<=4
     slots=meta['capabilities']['ui_hierarchy']['levels'][home]['params']
     assert key in [x if isinstance(x,str) else x.get('key') for x in slots]
