@@ -200,6 +200,12 @@ static void set_param(void *instance,const char *key,const char *value){
     if(!instance||!key||!value)return;
     Synth *s=instance;
     if(eq(key,"state")){
+        /* Older presets do not contain the six Phase 10 spectral keys.
+         * Loading one must restore neutral spectral processing, not retain
+         * hidden values from the previously selected sound. The smoothing
+         * state follows these new targets naturally without clicks. */
+        s->osc1_spectral_shift=s->osc1_spectral_fold=s->osc1_spectral_scramble=0;
+        s->osc2_spectral_shift=s->osc2_spectral_fold=s->osc2_spectral_scramble=0;
         char k[32],v[24];int ix=0;
         while(value[ix] && ix<2048){
             int ki=0,vi=0;
