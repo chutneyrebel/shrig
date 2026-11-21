@@ -512,7 +512,12 @@ static void render_block(void *instance,int16_t *out,int frames){
                 float ph1=p1+8.f,ph2=p1-8.f;
                 if(ph1>=256.f)ph1-=256.f;if(ph2<0.f)ph2+=256.f;
                 int shape_table=s->curated_osc1?107+s->curated_osc1:t0;
-                float avg=.5f*(table_at(shape_table,pos,v->band,ph1)+table_at(shape_table,pos,v->band,ph2));
+                /* Shape samples the same spectral signal as the main oscillator. */
+                float left=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph1,
+                    .01f*s->osc1_spectral_shift,.01f*s->osc1_spectral_fold,.01f*s->osc1_spectral_scramble):table_at(shape_table,pos,v->band,ph1);
+                float right=s->curated_osc1?spectral_morph_at(s->curated_osc1-1,pos,v->band,ph2,
+                    .01f*s->osc1_spectral_shift,.01f*s->osc1_spectral_fold,.01f*s->osc1_spectral_scramble):table_at(shape_table,pos,v->band,ph2);
+                float avg=.5f*(left+right);
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
             x*=.01f*clampf((float)s->osc1_volume+mx[8]*50.f,0.f,100.f);if(newmode)x*=gain1*amp1;
