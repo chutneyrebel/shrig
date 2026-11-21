@@ -147,8 +147,8 @@ assert len((ROOT/'src/module.json').read_bytes())<8192, 'module.json must fit Sc
 assert len(meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'])==8
 assert meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'][:2]==['lfo_rate','lfo_depth'], 'Main controls must prioritize motion'
 assert all(k in meta['capabilities']['ui_hierarchy']['levels']['root']['knobs'] for k in ('lfo_filter','cutoff','resonance','master_pan','level')), 'Synth Face missing live performance controls'
-assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:4]==['face_osc1','wavetable','position','osc1_octave']
-assert len(meta['capabilities']['chain_params'])==74
+assert meta['capabilities']['ui_hierarchy']['levels']['osc1']['params'][:3]==['face_osc1','wavetable','curated_osc1']
+assert len(meta['capabilities']['chain_params'])==76
 assert [p['key'] for p in meta['capabilities']['chain_params'] if p['type']=='canvas']==['face','face_osc1','face_osc2','face_filter']
 # Schwung as_page canvases inherit the *level* knobs. Each face must own its level.
 expected_faces=[('face','sprig_main','root'),('face_osc1','sprig_osc1','osc1'),('face_osc2','sprig_osc2','osc2'),('face_filter','sprig_filter','filter')]
@@ -230,7 +230,7 @@ setp('wave','Triangle');assert getp('wave')=='3'
 setp('wave','Sine');assert getp('wave')=='0'
 setp('wave','Square');assert getp('wave')=='2'
 # Unified selection exposes all 100 waveforms without a bank switch.
-assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['wavetable','position','osc1_octave']
+assert json.loads(getp('ui_hierarchy'))['levels']['osc1']['knobs'][:3]==['curated_osc1','position','osc1_octave']
 setp('wavetable',0);assert getp('wavetable')=='0'
 setp('wavetable',107);assert getp('wavetable')=='107'
 setp('wavetable',999);assert getp('wavetable')=='107'
