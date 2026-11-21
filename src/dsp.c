@@ -414,6 +414,15 @@ static float spectral_morph_at(int index,float position,int band,float phase,
     float wet=clampf(total,0.f,1.f);
     return original*(1.f-wet)+(processed/total)*wet;
 }
+#else
+/* Native factory-preset export builds without the optional curated table bank.
+ * Keep the plugin loadable: spectral controls are neutral in this configuration.
+ * The hardware build defines SYNTH_ESIS_ENABLE_CURATED and uses the full engine. */
+static float spectral_morph_at(int index,float position,int band,float phase,
+                               float shift,float fold,float scramble){
+    (void)shift;(void)fold;(void)scramble;
+    return table_at(108+index,position,band,phase);
+}
 #endif
 static int16_t pcm(float f){
     float x=clampf(f*32767.0f,-32767.f,32767.f);
