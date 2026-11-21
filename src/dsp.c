@@ -39,6 +39,7 @@ typedef struct {
 
 typedef struct {
     int wavetable, shape, wave, wt_bank, wt_table, spectral_shape, legacy_shape, position, cutoff, resonance, attack, decay, sustain, release, level;
+    int curated_osc1, curated_osc2;
     int osc1_warp_type, osc1_warp, osc1_detune, osc1_octave, osc1_pan, osc1_volume;
     int osc2_wavetable, osc2_position, osc2_warp_type, osc2_warp, osc2_detune, osc2_octave, osc2_pan, osc2_volume;
     int osc2_level, detune, lfo_rate, lfo_depth, lfo_wt_depth, drive;
@@ -156,6 +157,7 @@ static void on_midi(void *instance,const uint8_t *msg,int len,int source){
 typedef struct { const char *name; int min,max; size_t offset; } Param;
 #define P(key,hi) {#key,0,hi,offsetof(Synth,key)}
 static const Param params[]={
+    P(curated_osc1,16),P(curated_osc2,16),
     P(wavetable,107),P(shape,100),P(wave,3),P(wt_bank,1),P(wt_table,95),P(spectral_shape,100),P(legacy_shape,100),P(position,100),P(cutoff,100),P(resonance,100),
     P(attack,2000),P(decay,2000),P(sustain,100),P(release,2000),P(level,100),
     P(osc1_warp_type,7),P(osc1_warp,100),P(osc1_detune,100),P(osc1_octave,4),P(osc1_pan,100),P(osc1_volume,100),
@@ -453,18 +455,19 @@ static void render_block(void *instance,int16_t *out,int frames){
             float table=clampf(s->smooth_table,0.f,107.f);
             int t0=(int)table,t1=t0<107?t0+1:107;float tm=table-(float)t0;
             float p1=warp_phase(v->phase/256.f,s->osc1_warp_type,clampf((float)s->osc1_warp+mx[4]*50.f,0.f,100.f))*256.f;
-            float x=table_at(t0,pos,v->band,p1);
-            if(tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
+            float x=s->curated_osc1?table_at(107+s->curated_osc1,pos,v->band,p1):table_at(t0,pos,v->band,p1);
+            if(!s->curated_osc1 && tm>.00001f)x+=(table_at(t1,pos,v->band,p1)-x)*tm;
             float sh=clampf((s->smooth_shape-50.f)/50.f,-1.f,1.f);
             if(sh!=0.f){
                 float ph1=p1+8.f,ph2=p1-8.f;
                 if(ph1>=256.f)ph1-=256.f;if(ph2<0.f)ph2+=256.f;
-                float avg=.5f*(table_at(t0,pos,v->band,ph1)+table_at(t0,pos,v->band,ph2));
+                int shape_table=s->curated_osc1?107+s->curated_osc1:t0;
+                float avg=.5f*(table_at(shape_table,pos,v->band,ph1)+table_at(shape_table,pos,v->band,ph2));
                 x+=sh<0.f?(avg-x)*(-sh*.9f):(x-avg)*(sh*.85f);
             }
             x*=.01f*clampf((float)s->osc1_volume+mx[8]*50.f,0.f,100.f);if(newmode)x*=gain1*amp1;
             float p2=warp_phase(v->phase2/256.f,s->osc2_warp_type,clampf((float)s->osc2_warp+mx[5]*50.f,0.f,100.f))*256.f;
-            float second=table_at(s->osc2_wavetable,pos2,v->band,p2)*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
+            float second=table_at(s->curated_osc2?107+s->curated_osc2:s->osc2_wavetable,pos2,v->band,p2)*(.01f*clampf((float)s->osc2_volume+mx[9]*50.f,0.f,100.f));
             second+=lookup(1,0,v->band,v->phase2)*(.006f*s->osc2_level);if(newmode)second*=gain2*amp2;
             float pan1=.01f*clampf((float)s->osc1_pan+mx[6]*50.f,0.f,100.f),pan2=.01f*clampf((float)s->osc2_pan+mx[7]*50.f,0.f,100.f);
             float left=x*(1.f-pan1)+second*(1.f-pan2);
