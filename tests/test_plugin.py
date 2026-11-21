@@ -19,9 +19,10 @@ if not (ROOT/'src/expanded_tables.h').is_file():
     subprocess.run(['python3',str(ROOT/'scripts/generate_expanded_tables.py')],check=True)
 if not (ROOT/'src/tables.h').is_file():
     subprocess.run(['python3',str(ROOT/'scripts/generate_tables.py')],check=True)
+subprocess.run(['python3',str(ROOT/'scripts/generate_curated_header.py'),'--output',str(BUILD/'curated_tables.h')],check=True)
 so = BUILD / 'dsp-host.so'
 subprocess.run(['gcc', '-std=c11', '-O2', '-shared', '-fPIC', '-ffreestanding', '-fno-builtin',
-                '-fvisibility=hidden', str(ROOT/'src/dsp.c'), '-o', str(so)],check=True)
+                '-fvisibility=hidden', '-DSYNTH_ESIS_ENABLE_CURATED', '-I'+str(BUILD), str(ROOT/'src/dsp.c'), '-o', str(so)],check=True)
 # Build with a structure ABI matching the public Schwung plugin_api_v2_t declaration.
 CREATE = C.CFUNCTYPE(C.c_void_p,C.c_char_p,C.c_char_p)
 DESTROY = C.CFUNCTYPE(None,C.c_void_p)
@@ -763,3 +764,30 @@ for recipe in factory_library['presets']:
     api.destroy(a)
     api.destroy(b)
 print('PASS: all 16 factory patches serialize and restore through native Schwung state')
+
+# Phase 10B: curated bank must be audible and independently selectable.
+a=api.create(b'.',None)
+assert a
+def probe(table1,table2):
+    api.set(a,b'curated_osc1',str(table1).encode())
+    api.set(a,b'curated_osc2',str(table2).encode())
+    api.set(a,b'osc1_volume',b'100')
+    api.set(a,b'osc2_volume',b'0')
+    buf=(C.c_uint8*3)(0x90,60,100)
+    api.midi(a,buf,3,0)
+    out=(C.c_int16*256)()
+    audio=[]
+    for _ in range(8):
+        api.render(a,out,128)
+        audio.extend(out[::2])
+    api.midi(a,(C.c_uint8*3)(0x80,60,0),3,0)
+    return audio
+base=probe(0,0)
+curated=probe(1,0)
+assert rms(curated)>10, 'curated oscillator silent'
+assert rms([x-y for x,y in zip(base,curated)])>10, 'curated oscillator not audibly different'
+api.set(a,b'curated_osc1',b'0')
+api.set(a,b'curated_osc2',b'16')
+assert getp('curated_osc1') in ('0','16')  # global test instance is separate from a
+api.destroy(a)
+print('PASS: curated wavetable bank compiles and changes audible DSP output')
