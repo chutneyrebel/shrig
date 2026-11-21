@@ -130,5 +130,39 @@ class SpectralAudioIntegration(unittest.TestCase):
             self.api.destroy(synth)
 
 
+    def test_eight_voice_dual_oscillator_rapid_depth_sweeps(self):
+        synth = self.api.create(b".", None)
+        self.assertTrue(synth)
+        try:
+            for key, value in {"curated_osc1":8, "curated_osc2":8,
+                               "osc1_volume":50, "osc2_volume":50,
+                               "cutoff":80, "level":35,
+                               "attack":5, "decay":100, "sustain":85}.items():
+                self.setp(synth, key, value)
+            self.render(synth, 40)
+            notes = (48, 52, 55, 60, 64, 67, 71, 74)
+            for number in notes:
+                self.note(synth, number)
+            self.assertEqual(self.getp(synth, "voice_activity"), "8")
+            energy = 0
+            for step in range(16):
+                for osc in (1, 2):
+                    for axis, val in (("shift",step * 7 % 101),
+                                      ("fold",100 - step * 6),
+                                      ("scramble",(step * 23) % 101)):
+                        self.setp(synth, f"osc{osc}_spectral_{axis}", val)
+                samples = self.render(synth, 4)
+                energy += sum(x*x for x in samples)
+                self.assertTrue(all(-32768 <= sample <= 32767 for sample in samples))
+            self.assertGreater(energy, 1000000)
+            for number in notes:
+                off = (C.c_uint8 * 3)(0x80, number, 0)
+                self.api.midi(synth, off, 3, 0)
+            self.render(synth, 200)
+            self.assertEqual(self.getp(synth, "voice_activity"), "0")
+        finally:
+            self.api.destroy(synth)
+
+
 if __name__ == "__main__":
     unittest.main()
