@@ -21,6 +21,21 @@ class SpectralIntegrationTests(unittest.TestCase):
                 key = f"{osc}_spectral_{mode}"
                 self.assertIn(f"P({key},100)", dsp)
 
+    def test_six_spectral_controls_are_reachable_and_neutral(self):
+        meta = json.loads((ROOT / "src/module.json").read_text())
+        caps = meta["capabilities"]
+        params = {p["key"]: p for p in caps["chain_params"]}
+        levels = caps["ui_hierarchy"]["levels"]
+        root_links = [p.get("level") for p in levels["root"]["params"] if isinstance(p, dict)]
+        for osc in ("osc1", "osc2"):
+            page = f"{osc}_spectral"
+            self.assertIn(page, root_links)
+            expected = [f"{osc}_spectral_{mode}" for mode in ("shift", "fold", "scramble")]
+            self.assertEqual(levels[page]["knobs"], expected)
+            for key in expected:
+                self.assertEqual({k: params[key][k] for k in ("type", "min", "max", "default")},
+                                 {"type": "int", "min": 0, "max": 100, "default": 0})
+
     def test_metadata_limit_and_future_spectral_page_contract(self):
         raw = (ROOT / "src/module.json").read_bytes()
         self.assertLess(len(raw), 8192)
