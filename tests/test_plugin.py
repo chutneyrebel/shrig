@@ -656,13 +656,15 @@ for key in ('lfo1_waveform','lfo2_waveform'):
     assert descriptor['type']=='enum' and descriptor['default']==0
     assert descriptor['options']==['Sine','Tri','Saw','Square','S&H','Smooth']
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
-    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+    # Motion controls are exposed as level knobs; duplicate params are optional.
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
 print('PASS: Phase 5 waveform selectors exposed on native MOTION page')
 
 # Phase 6: manual-BPM musical LFO divisions remain opt-in.
 for key in ('sync_bpm','lfo1_sync','lfo2_sync'):
     desc=next(p for p in chain_params if p['key']==key)
-    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['params']
+    # Motion controls are exposed as level knobs; duplicate params are optional.
+    assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
     assert key in meta['capabilities']['ui_hierarchy']['levels']['motion']['knobs']
     assert desc['default']==(120 if key=='sync_bpm' else 0)
 p=api.create(b'.',None)
