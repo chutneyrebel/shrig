@@ -63,7 +63,7 @@ def compose_bins(bins, mask, ceiling, protect=PROTECTED_HARMONICS, seed=1):
     for k in range(top + 1, N // 2 + 1):
         x[k] = 0j
     x[N // 2] = 0j
-    x[0] = 0j  # Remove DC even if an upstream table changes
+    # Match the C operator: preserve DC here; remove it after reconstruction.
     return x
 
 
