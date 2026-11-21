@@ -17,6 +17,8 @@ jobs:
         run: python3 scripts/generate_tables.py
       - name: Run desktop ABI and audio tests
         run: python3 tests/test_plugin.py
+      - name: Verify compositional spectral reference
+        run: python3 -m unittest discover -s tests -p 'test_spectral_reference.py'
       - name: Test Phase 10 spectral shaping prototype and lookup guards
         run: python3 -m unittest discover -s tests -p 'test_spectral_shape.py' && python3 -m unittest discover -s tests -p 'test_phase10_boundary.py' && python3 -m unittest discover -s tests -p 'test_shape_variants.py' && python3 -m unittest discover -s tests -p 'test_custom_wavetable.py' && python3 -m unittest discover -s tests -p 'test_curated_wavetables.py' && python3 -m unittest discover -s tests -p 'test_curated_export.py' && python3 -m unittest discover -s tests -p 'test_curated_header.py' && python3 -m unittest discover -s tests -p 'test_curated_integration.py' && python3 -m unittest discover -s tests -p 'test_aggressive_spectral.py'
       - name: Export 16 curated custom wavetables
